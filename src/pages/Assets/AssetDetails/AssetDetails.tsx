@@ -1,5 +1,5 @@
 import { Flex, Stack } from '@chakra-ui/react'
-import { AssetMarketData } from '@shapeshiftoss/market-service'
+import { AssetMarketData } from '../../../hooks/useAsset/useAsset'
 import { Page } from 'components/Layout/Page'
 
 import { AssetHeader } from './AssetHeader'

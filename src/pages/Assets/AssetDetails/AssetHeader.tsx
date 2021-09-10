@@ -12,7 +12,8 @@ import {
   StatLabel,
   StatNumber
 } from '@chakra-ui/react'
-import { AssetMarketData, HistoryTimeframe } from '@shapeshiftoss/market-service'
+import { HistoryTimeframe } from '@shapeshiftoss/market-service'
+import { AssetMarketData } from '../../../hooks/useAsset/useAsset'
 import { Card } from 'components/Card/Card'
 import { Graph } from 'components/Graph/Graph'
 import { TimeControls } from 'components/Graph/TimeControls'

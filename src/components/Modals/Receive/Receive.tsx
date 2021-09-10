@@ -15,7 +15,7 @@ import {
   useToast
 } from '@chakra-ui/react'
 import { ChainIdentifier } from '@shapeshiftoss/chain-adapters'
-import { AssetMarketData } from '@shapeshiftoss/market-service'
+import { AssetMarketData } from '../../../hooks/useAsset/useAsset'
 import { Card } from 'components/Card/Card'
 import { QRCode } from 'components/QRCode/QRCode'
 import { RawText, Text } from 'components/Text'

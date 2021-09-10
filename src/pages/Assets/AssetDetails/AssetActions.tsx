@@ -1,6 +1,6 @@
 import { ArrowDownIcon, ArrowUpIcon } from '@chakra-ui/icons'
 import { Button, ButtonGroup } from '@chakra-ui/react'
-import { AssetMarketData } from '@shapeshiftoss/market-service'
+import { AssetMarketData } from '../../../hooks/useAsset/useAsset'
 import { useModal } from 'context/ModalProvider/ModalProvider'
 import { useWallet, WalletActions } from 'context/WalletProvider/WalletProvider'
 

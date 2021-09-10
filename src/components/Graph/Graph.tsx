@@ -1,10 +1,6 @@
 import { Center, SlideFade } from '@chakra-ui/react'
-import {
-  AssetMarketData,
-  getAssetHistory,
-  HistoryData,
-  HistoryTimeframe
-} from '@shapeshiftoss/market-service'
+import { getPriceHistory, HistoryData, HistoryTimeframe } from '@shapeshiftoss/market-service'
+import { AssetMarketData } from '../../hooks/useAsset/useAsset'
 import { ParentSize } from '@visx/responsive'
 import BigNumber from 'bignumber.js'
 import { memo, useEffect, useState } from 'react'
@@ -26,11 +22,7 @@ export const Graph = memo(({ asset, timeframe, setPercentChange }: GraphProps) =
     if (asset?.name) {
       ;(async () => {
         setLoading(true)
-        const data = await getAssetHistory(
-          asset.network?.toLowerCase(),
-          timeframe,
-          asset.contractAddress
-        )
+        const data = await getPriceHistory(asset.name?.toLowerCase(), timeframe, asset.tokenId)
         setData(data)
         setLoading(false)
         const startValue = data[0]?.price

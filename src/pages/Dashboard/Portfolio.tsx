@@ -9,19 +9,25 @@ import { useBalances } from 'hooks/useBalances/useBalances'
 import { useState } from 'react'
 
 import { AssetList } from './components/AssetList/AssetList'
-
+import { NetworkTypes, ChainTypes } from '@shapeshiftoss/asset-service'
 // TODO: Combined Portfolio Asset Chart
 const asset = {
   icon: 'https://static.coincap.io/assets/icons/256/btc.png',
   displayName: 'Bitcoin',
-  network: 'bitcoin',
+  network: NetworkTypes.MAINNET,
   symbol: 'BTC',
   price: '1000',
   marketCap: '1000',
   volume: '1000',
   changePercent24Hr: 25,
   description: 'loremIpsum',
-  name: 'bitcoin'
+  name: 'bitcoin',
+  chain: ChainTypes.BTC,
+  precision: 18,
+  color: '0',
+  secondaryColor: '0',
+  sendSupport: false,
+  receiveSupport: false
 }
 
 export const Portfolio = () => {
