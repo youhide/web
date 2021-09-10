@@ -1,11 +1,12 @@
 import { Flex } from '@chakra-ui/react'
-import { AssetMarketData, useGetAssetData } from '../../hooks/useAsset/useAsset'
-import { Page } from 'components/Layout/Page'
+import { ChainTypes, NetworkTypes } from '@shapeshiftoss/asset-service'
 import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { Page } from 'components/Layout/Page'
+import { Page } from 'components/Layout/Page'
 
+import { AssetMarketData, useGetAssetData } from '../../hooks/useAsset/useAsset'
 import { AssetDetails } from './AssetDetails/AssetDetails'
-import { NetworkTypes, ChainTypes } from '@shapeshiftoss/asset-service'
 
 export interface MatchParams {
   network: string

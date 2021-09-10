@@ -6,9 +6,9 @@ import {
   InputProps,
   InputRightElement
 } from '@chakra-ui/react'
-import { useLocaleFormatter } from 'hooks/useLocaleFormatter/useLocaleFormatter'
 import { Control, Controller, ControllerProps } from 'react-hook-form'
 import NumberFormat from 'react-number-format'
+import { useLocaleFormatter } from 'hooks/useLocaleFormatter/useLocaleFormatter'
 
 const CryptoInput = (props: InputProps) => (
   <Input
@@ -28,6 +28,7 @@ type TokenRowProps = {
   rules?: ControllerProps['rules']
   inputLeftElement?: React.ReactNode
   inputRightElement?: React.ReactNode
+  onInputChange?: any
 } & InputGroupProps
 
 export const TokenRow = ({
@@ -36,6 +37,7 @@ export const TokenRow = ({
   rules,
   inputLeftElement,
   inputRightElement,
+  onInputChange,
   ...rest
 }: TokenRowProps) => {
   const {
@@ -50,16 +52,21 @@ export const TokenRow = ({
         </InputLeftElement>
       )}
       <Controller
-        render={({ field: { onChange, value } }) => (
-          <NumberFormat
-            inputMode='decimal'
-            thousandSeparator={localeParts.group}
-            decimalSeparator={localeParts.decimal}
-            value={value}
-            customInput={CryptoInput}
-            onValueChange={e => onChange(e.value)}
-          />
-        )}
+        render={({ field: { onChange, value } }) => {
+          return (
+            <NumberFormat
+              inputMode='decimal'
+              thousandSeparator={localeParts.group}
+              decimalSeparator={localeParts.decimal}
+              customInput={CryptoInput}
+              value={value}
+              onValueChange={e => {
+                onChange(e.value)
+                onInputChange && onInputChange(e.value)
+              }}
+            />
+          )
+        }}
         name={fieldName}
         control={control}
         rules={rules}

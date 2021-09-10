@@ -1,9 +1,9 @@
 import { ComponentWithAs, IconProps } from '@chakra-ui/react'
 import { WebUSBKeepKeyAdapter } from '@shapeshiftoss/hdwallet-keepkey-webusb'
 import { NativeAdapter } from '@shapeshiftoss/hdwallet-native'
+import { RouteProps } from 'react-router-dom'
 import { KeepKeyIcon } from 'components/Icons/KeepKeyIcon'
 import { ShapeShiftVertical } from 'components/Icons/SSVerticalIcon'
-import { RouteProps } from 'react-router-dom'
 
 import { PinModal } from './KeepKey/PinModal'
 import { NativeImport } from './NativeWallet/NativeImport'
@@ -11,7 +11,7 @@ import { NativePassword } from './NativeWallet/NativePassword'
 import { NativeSeed } from './NativeWallet/NativeSeed'
 import { NativeStart } from './NativeWallet/NativeStart'
 import { NativeSuccess } from './NativeWallet/NativeSuccess'
-import { NativeTestPhrase } from './NativeWallet/NativeTestPhrase'
+import { NativeTestPhrase } from './NativeWallet/NativeTestPhrase/NativeTestPhrase'
 
 export interface SupportedWalletInfo {
   adapter: any
