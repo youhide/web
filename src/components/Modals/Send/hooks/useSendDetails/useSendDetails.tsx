@@ -118,7 +118,7 @@ export const useSendDetails = (): UseSendDetailsReturnType => {
     if (assetBalance && wallet) {
       setLoading(true)
       const path = "m/44'/60'/0'/0/0"
-      const fromAddress = await adapter.getAddress({ wallet, path })
+      const { address: fromAddress } = await adapter.getAddress({ wallet, path })
       const adapterFees = await adapter.getFeeData({
         to: address,
         from: fromAddress,

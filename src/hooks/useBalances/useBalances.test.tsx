@@ -34,7 +34,7 @@ const wallet = {}
 const setup = ({
   adapter = () => ({
     getType: () => ChainTypes.Ethereum,
-    getAddress: () => Promise.resolve('0xMyWalletAddress'),
+    getAddress: () => Promise.resolve({ address: '0xMyWalletAddress' }),
     getBalance: () => Promise.resolve(balances)
   })
 }) => {

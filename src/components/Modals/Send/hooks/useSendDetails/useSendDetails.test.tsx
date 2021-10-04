@@ -150,7 +150,7 @@ describe('useSendDetails', () => {
     ;(useHistory as jest.Mock<unknown>).mockImplementation(() => ({ push: jest.fn() }))
     ;(useChainAdapters as jest.Mock<unknown>).mockImplementation(() => ({
       byChain: () => ({
-        getAddress: () => '0xMyWalletsAddress',
+        getAddress: () => { address: '0xMyWalletsAddress' },
         getFeeData: () => estimatedFees,
         buildSendTransaction: () => ({
           txToSign: {},

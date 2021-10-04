@@ -52,7 +52,7 @@ const createMockData = (symbols: string[], filteredSymbol?: string) => {
   const adapter = [
     jest.fn(() => ({
       getType: jest.fn(() => 'ethereum'),
-      getAddress: jest.fn(() => Promise.resolve(walletAddress)),
+      getAddress: jest.fn(() => Promise.resolve({ address: walletAddress })),
       getTxHistory: jest.fn(() => Promise.resolve({ transactions }))
     }))
   ]

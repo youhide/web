@@ -85,7 +85,7 @@ export const useTransactions = ({
       )
       if (!getAdapter) return
       const chainAdapter = getAdapter()
-      const address = await chainAdapter.getAddress({ wallet, path: "m/44'/60'/0'/0/0" })
+      const { address } = await chainAdapter.getAddress({ wallet, path: "m/44'/60'/0'/0/0" })
       if (!chainAdapter) return
       let txHistoryResponse
       try {
@@ -111,7 +111,7 @@ export const useTransactions = ({
     // Get transaction history for all chians that are supported.
     for (const getAdapter of supportedAdapters) {
       const adapter = getAdapter()
-      const address = await adapter.getAddress({ wallet, path: "m/44'/60'/0'/0/0" })
+      const { address } = await adapter.getAddress({ wallet, path: "m/44'/60'/0'/0/0" })
       let txHistoryResponse
       try {
         txHistoryResponse = await adapter.getTxHistory(address, {

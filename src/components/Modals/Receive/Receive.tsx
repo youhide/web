@@ -45,7 +45,8 @@ const Receive = ({ asset }: ReceivePropsType) => {
       const chainAdapter = chainAdapterManager.byChain(ChainTypes.Ethereum)
       // TODO(0xdef1cafe): remove this when chain adapters has a default path
       const path = `m/44'/60'/0'/0/0`
-      setReceiveAddress(await chainAdapter.getAddress({ wallet, path }))
+      const { address } = await chainAdapter.getAddress({ wallet, path })
+      setReceiveAddress(address)
     })()
   }, [chainAdapterManager, state, setReceiveAddress])
 
