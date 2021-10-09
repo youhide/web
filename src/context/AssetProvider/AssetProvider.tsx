@@ -1,4 +1,5 @@
 import { AssetService } from '@shapeshiftoss/asset-service'
+import { getConfig } from 'config'
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { CircularProgress } from 'components/CircularProgress/CircularProgress'
 
@@ -13,7 +14,8 @@ export const AssetProvider = ({ children }: AssetProviderProps): JSX.Element => 
 
   useEffect(() => {
     ;(async () => {
-      const service = new AssetService('')
+      const assetServiceURL = getConfig().REACT_APP_ASSET_SERVICE_DATA
+      const service = new AssetService(assetServiceURL)
       await service.initialize()
       setAssetService(service)
     })()
