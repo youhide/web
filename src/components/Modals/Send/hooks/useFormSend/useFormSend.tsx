@@ -1,4 +1,6 @@
 import { useToast } from '@chakra-ui/react'
+import { ChainAdapter } from '@shapeshiftoss/chain-adapters'
+import { ChainTypes } from '@shapeshiftoss/types'
 import { useTranslate } from 'react-polyglot'
 import { useChainAdapters } from 'context/ChainAdaptersProvider/ChainAdaptersProvider'
 import { useModal } from 'context/ModalProvider/ModalProvider'
@@ -17,51 +19,73 @@ export const useFormSend = () => {
   } = useWallet()
 
   const handleSend = async (data: SendInput) => {
-    if (wallet) {
-      try {
-        const path = "m/44'/60'/0'/0/0" // TODO (technojak) get path and asset precision from asset-service
-        const adapter = chainAdapter.byChain(data.asset.chain)
-        const value = bnOrZero(data.crypto.amount)
-          .times(bnOrZero(10).exponentiatedBy(data.asset.precision))
-          .toFixed(0)
+    if (!wallet) return
+    try {
+      const adapter = chainAdapter.byChain(data.asset.chain)
+      const value = bnOrZero(data.crypto.amount)
+        .times(bnOrZero(10).exponentiatedBy(data.asset.precision))
+        .toFixed(0)
 
-        const { txToSign } = await adapter.buildSendTransaction({
-          to: data.address,
-          value,
-          erc20ContractAddress: data.asset.tokenId,
-          wallet,
-          path,
-          fee: data.estimatedFees[data.feeType].feeUnitPrice,
-          limit: data.estimatedFees[data.feeType].feeUnits
-        })
+      const { estimatedFees, feeType } = data
+      const { feePerUnit } = estimatedFees[feeType]
 
-        const signedTx = await adapter.signTransaction({ txToSign, wallet })
-
-        await adapter.broadcastTransaction(signedTx)
-
-        toast({
-          title: translate('modals.send.sent', { asset: data.asset.name }),
-          description: translate('modals.send.youHaveSent', {
-            amount: data.crypto.amount,
-            symbol: data.crypto.symbol
-          }),
-          status: 'success',
-          duration: 9000,
-          isClosable: true,
-          position: 'top-right'
-        })
-      } catch (error) {
-        toast({
-          title: translate('modals.send.sent'),
-          description: translate('modals.send.somethingWentWrong'),
-          status: 'error',
-          duration: 9000,
-          isClosable: true,
-          position: 'top-right'
-        })
-      } finally {
-        send.close()
+      let txToSign
+      switch (data.asset.chain) {
+        case ChainTypes.Ethereum: {
+          const ethAdapter = adapter as ChainAdapter<ChainTypes.Ethereum>
+          const txToSend = await ethAdapter.buildSendTransaction({
+            to: data.address,
+            value,
+            erc20ContractAddress: data.asset.tokenId,
+            wallet,
+            fee: feePerUnit,
+            gasLimit: estimatedFees[feeType].chainSpecific?.feeLimit
+          })
+          txToSign = txToSend.txToSign
+          break
+        }
+        case ChainTypes.Bitcoin: {
+          const btcAdapter = adapter as ChainAdapter<ChainTypes.Bitcoin>
+          const txToSend = await btcAdapter.buildSendTransaction({
+            to: data.address,
+            value,
+            wallet,
+            fee: feePerUnit
+          })
+          txToSign = txToSend.txToSign
+          break
+        }
+        default: {
+          throw new Error(`useFormSend: unsupported chain ${data.asset.chain}`)
+        }
       }
+
+      const signedTx = await adapter.signTransaction({ txToSign, wallet })
+
+      await adapter.broadcastTransaction(signedTx)
+
+      toast({
+        title: translate('modals.send.sent', { asset: data.asset.name }),
+        description: translate('modals.send.youHaveSent', {
+          amount: data.crypto.amount,
+          symbol: data.crypto.symbol
+        }),
+        status: 'success',
+        duration: 9000,
+        isClosable: true,
+        position: 'top-right'
+      })
+    } catch (error) {
+      toast({
+        title: translate('modals.send.sent'),
+        description: translate('modals.send.somethingWentWrong'),
+        status: 'error',
+        duration: 9000,
+        isClosable: true,
+        position: 'top-right'
+      })
+    } finally {
+      send.close()
     }
   }
   return {

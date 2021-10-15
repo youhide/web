@@ -1,6 +1,6 @@
 import { useToast } from '@chakra-ui/react'
 import { ETHSignTx } from '@shapeshiftoss/hdwallet-core'
-import { FeeDataEstimate, FeeDataKey, NetworkTypes } from '@shapeshiftoss/types'
+import { ChainAdapters, ChainTypes, NetworkTypes } from '@shapeshiftoss/types'
 import get from 'lodash/get'
 import { useEffect, useState } from 'react'
 import { useFormContext, useWatch } from 'react-hook-form'
@@ -74,12 +74,11 @@ export const useSendDetails = (): UseSendDetailsReturnType => {
 
   const buildTransaction = async (): Promise<{
     txToSign: ETHSignTx
-    estimatedFees: FeeDataEstimate
+    estimatedFees: ChainAdapters.FeeDataEstimate<ChainTypes>
   }> => {
     const values = getValues()
     if (wallet) {
       // TODO (technojak) get path and decimals from asset-service
-      const path = "m/44'/60'/0'/0/0"
       const value = bnOrZero(values.crypto.amount)
         .times(bnOrZero(10).exponentiatedBy(values.asset.precision || ETH_PRECISION))
         .toFixed(0)
@@ -89,8 +88,7 @@ export const useSendDetails = (): UseSendDetailsReturnType => {
           to: values.address,
           value,
           erc20ContractAddress: values.asset.tokenId,
-          wallet,
-          path
+          wallet
         })
         return data
       } catch (error) {
@@ -117,8 +115,7 @@ export const useSendDetails = (): UseSendDetailsReturnType => {
   const handleSendMax = async () => {
     if (assetBalance && wallet) {
       setLoading(true)
-      const path = "m/44'/60'/0'/0/0"
-      const fromAddress = await adapter.getAddress({ wallet, path })
+      const fromAddress = await adapter.getAddress({ wallet })
       const adapterFees = await adapter.getFeeData({
         to: address,
         from: fromAddress,
@@ -126,13 +123,13 @@ export const useSendDetails = (): UseSendDetailsReturnType => {
         contractAddress: asset.tokenId
       })
       // Assume fast fee for send max
-      const fastFee = adapterFees[FeeDataKey.Fast]
+      const fastFee = adapterFees[ChainAdapters.FeeDataKey.Fast]
       const chainAsset = await getAssetData({
         chain: asset.chain,
         network: NetworkTypes.MAINNET,
         tokenId: asset.tokenId
       })
-      const networkFee = bnOrZero(fastFee.networkFee).div(`1e${chainAsset.precision}`)
+      const networkFee = bnOrZero(fastFee?.networkFee).div(`1e${chainAsset.precision}`)
 
       if (asset.tokenId) {
         setValue(SendFormFields.CryptoAmount, accountBalances.crypto.toPrecision())

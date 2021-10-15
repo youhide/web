@@ -1,4 +1,4 @@
-import { ChainTypes, Transaction } from '@shapeshiftoss/types'
+import { ChainAdapters, ChainTypes } from '@shapeshiftoss/types'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import { useCallback, useEffect } from 'react'
@@ -8,11 +8,11 @@ import { useStateIfMounted } from 'hooks/useStateIfMounted/useStateIfMounted'
 import { fromBaseUnit } from 'lib/math'
 dayjs.extend(relativeTime)
 
-export type FormatTransactionType = Transaction & {
+export type FormatTransactionType = ChainAdapters.Transaction<ChainTypes> & {
   type: string
   amount: string
-  date: string
-  dateFromNow: string
+  date?: string
+  dateFromNow?: string
   chain: ChainTypes
 }
 
@@ -40,18 +40,25 @@ export enum TxStatusEnum {
 export const getDate = (timestamp: number) =>
   dayjs(Number(timestamp) * 1000).format('MM/DD/YYYY h:mm A')
 
-const formatTransactions = (txs: Transaction[], walletAddress: string): FormatTransactionType[] => {
+const formatTransactions = (
+  txs: ChainAdapters.Transaction<ChainTypes>[],
+  walletAddress: string
+): FormatTransactionType[] => {
   if (!(txs ?? []).length) return []
-  return txs.map((tx: Transaction) => {
-    const date = getDate(tx.timestamp)
+  return txs.map((tx: ChainAdapters.Transaction<ChainTypes>) => {
+    let dateData = {}
+    if (tx.timestamp) {
+      const date = getDate(tx.timestamp)
+      const dateFromNow = dayjs(date).fromNow()
+      dateData = { date, dateFromNow }
+    }
     return {
       ...tx,
       type: walletAddress === tx.from ? TxTypeEnum.Sent : TxTypeEnum.Received,
       amount: fromBaseUnit(tx.value, 18 /** TODO: get precision from asset service **/),
-      date,
-      dateFromNow: dayjs(date).fromNow(),
       fee: fromBaseUnit(tx.fee, 18),
-      chain: tx.chain
+      chain: tx.chain,
+      ...dateData
     }
   })
 }
@@ -81,10 +88,11 @@ export const useTransactions = ({
     // Get transaction history for chain that is provided.
     if (chain) {
       const chainAdapter = chainAdapterManager.byChain(chain)
-      const address = await chainAdapter.getAddress({ wallet, path: "m/44'/60'/0'/0/0" })
+      const pubkey = await chainAdapter.getAddress({ wallet })
       let txHistoryResponse
       try {
-        txHistoryResponse = await chainAdapter.getTxHistory(address, {
+        txHistoryResponse = await chainAdapter.getTxHistory({
+          pubkey,
           page,
           pageSize,
           contract: contractAddress
@@ -94,7 +102,7 @@ export const useTransactions = ({
       }
       const formattedTransactions = formatTransactions(
         txHistoryResponse?.transactions ?? [],
-        address
+        pubkey
       )
       return { txs: formattedTransactions }
     }
@@ -105,10 +113,11 @@ export const useTransactions = ({
     // Get transaction history for all chians that are supported.
     for (const getAdapter of supportedAdapters) {
       const genericAdapter = getAdapter()
-      const address = await genericAdapter.getAddress({ wallet, path: "m/44'/60'/0'/0/0" })
+      const pubkey = await genericAdapter.getAddress({ wallet })
       let txHistoryResponse
       try {
-        txHistoryResponse = await genericAdapter.getTxHistory(address, {
+        txHistoryResponse = await genericAdapter.getTxHistory({
+          pubkey,
           page,
           pageSize,
           contract: contractAddress
@@ -117,7 +126,7 @@ export const useTransactions = ({
         console.error(err)
       }
       if (!txHistoryResponse) continue
-      formatTransactions(txHistoryResponse.transactions, address).forEach(
+      formatTransactions(txHistoryResponse.transactions, pubkey).forEach(
         (tx: FormatTransactionType) => transactions.push(tx)
       )
     }
