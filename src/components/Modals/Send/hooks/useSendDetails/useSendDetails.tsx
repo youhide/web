@@ -2,7 +2,7 @@ import { useToast } from '@chakra-ui/react'
 import { ChainAdapters, ChainTypes, NetworkTypes } from '@shapeshiftoss/types'
 import get from 'lodash/get'
 import { useEffect, useState } from 'react'
-import { useWatch } from 'react-hook-form'
+import { useFormContext, useWatch } from 'react-hook-form'
 import { useTranslate } from 'react-polyglot'
 import { useHistory } from 'react-router-dom'
 import { useChainAdapters } from 'context/ChainAdaptersProvider/ChainAdaptersProvider'
@@ -10,7 +10,6 @@ import { useWallet } from 'context/WalletProvider/WalletProvider'
 import { useGetAssetData } from 'hooks/useAsset/useAsset'
 import { useFlattenedBalances } from 'hooks/useBalances/useFlattenedBalances'
 import { bnOrZero } from 'lib/bignumber/bignumber'
-import { useFormContext } from 'lib/formUtils'
 
 import { SendFormFields, SendInput } from '../../Form'
 import { SendRoutes } from '../../Send'
@@ -92,9 +91,11 @@ export const useSendDetails = (): UseSendDetailsReturnType => {
   const handleNextClick = async () => {
     try {
       setLoading(true)
-      const { txToSign, estimatedFees } = await buildTransaction()
-      setValue(SendFormFields.Transaction, txToSign)
-      setValue(SendFormFields.EstimatedFees, estimatedFees)
+      // const { txToSign, estimatedFees } = await buildTransaction()
+      const data = await buildTransaction()
+      console.info(data)
+      // setValue(SendFormFields.Transaction, txToSign)
+      // setValue(SendFormFields.EstimatedFees, estimatedFees)
       history.push(SendRoutes.Confirm)
     } catch (error) {
       console.error(error)
