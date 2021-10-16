@@ -13,7 +13,7 @@ import {
   ModalHeader,
   Stack
 } from '@chakra-ui/react'
-import { useFormContext, useWatch } from 'react-hook-form'
+import { useWatch } from 'react-hook-form'
 import { useTranslate } from 'react-polyglot'
 import { useHistory } from 'react-router-dom'
 import { Amount } from 'components/Amount/Amount'
@@ -21,6 +21,7 @@ import { SlideTransition } from 'components/SlideTransition'
 import { Text } from 'components/Text'
 import { TokenRow } from 'components/TokenRow/TokenRow'
 import { useModal } from 'context/ModalProvider/ModalProvider'
+import { useFormContext } from 'lib/formUtils'
 
 import { SendFormFields } from '../Form'
 import { useSendDetails } from '../hooks/useSendDetails/useSendDetails'
@@ -35,9 +36,11 @@ export const Details = () => {
   const history = useHistory()
   const translate = useTranslate()
 
-  const [asset, crypto, fiat] = useWatch({
-    name: [SendFormFields.Asset, SendFormFields.Crypto, SendFormFields.Fiat]
-  })
+  const asset = useWatch({ name: SendFormFields.Asset })
+  const cryptoAmount = useWatch({ name: SendFormFields.CryptoAmount })
+  const cryptoSymbol = useWatch({ name: SendFormFields.CryptoSymbol })
+  const fiatAmount = useWatch({ name: SendFormFields.FiatAmount })
+  const fiatSymbol = useWatch({ name: SendFormFields.FiatSymbol })
 
   const { send } = useModal()
   const {
@@ -87,10 +90,10 @@ export const Details = () => {
               _hover={{ color: 'gray.400', transition: '.2s color ease' }}
             >
               {fieldName === SendFormFields.FiatAmount ? (
-                <Amount.Crypto value={crypto.amount} symbol={crypto.symbol} />
+                <Amount.Crypto value={cryptoAmount} symbol={cryptoSymbol} />
               ) : (
                 <Flex>
-                  <Amount.Fiat value={fiat.amount} mr={1} /> {fiat.symbol}
+                  <Amount.Fiat value={fiatAmount} mr={1} /> {fiatSymbol}
                 </Flex>
               )}
             </FormHelperText>
@@ -109,7 +112,7 @@ export const Details = () => {
                   onClick={toggleCurrency}
                   width='full'
                 >
-                  {crypto.symbol}
+                  {cryptoSymbol}
                 </Button>
               }
               inputRightElement={<SendMaxButton onClick={handleSendMax} />}
@@ -133,7 +136,7 @@ export const Details = () => {
                   onClick={toggleCurrency}
                   width='full'
                 >
-                  {fiat.symbol}
+                  {fiatSymbol}
                 </Button>
               }
               inputRightElement={<SendMaxButton onClick={handleSendMax} />}

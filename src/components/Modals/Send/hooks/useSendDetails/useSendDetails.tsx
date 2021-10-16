@@ -1,9 +1,8 @@
 import { useToast } from '@chakra-ui/react'
-import { ETHSignTx } from '@shapeshiftoss/hdwallet-core'
 import { ChainAdapters, ChainTypes, NetworkTypes } from '@shapeshiftoss/types'
 import get from 'lodash/get'
 import { useEffect, useState } from 'react'
-import { useFormContext, useWatch } from 'react-hook-form'
+import { useWatch } from 'react-hook-form'
 import { useTranslate } from 'react-polyglot'
 import { useHistory } from 'react-router-dom'
 import { useChainAdapters } from 'context/ChainAdaptersProvider/ChainAdaptersProvider'
@@ -11,8 +10,9 @@ import { useWallet } from 'context/WalletProvider/WalletProvider'
 import { useGetAssetData } from 'hooks/useAsset/useAsset'
 import { useFlattenedBalances } from 'hooks/useBalances/useFlattenedBalances'
 import { bnOrZero } from 'lib/bignumber/bignumber'
+import { useFormContext } from 'lib/formUtils'
 
-import { SendFormFields } from '../../Form'
+import { SendFormFields, SendInput } from '../../Form'
 import { SendRoutes } from '../../Send'
 import { useAccountBalances } from '../useAccountBalances/useAccountBalances'
 
@@ -31,23 +31,21 @@ type UseSendDetailsReturnType = {
   validateFiatAmount(value: string): boolean | string
 }
 
-// TODO (technojak) this should be removed in favor of the asset-service. For now assume the fallback is eth
-const ETH_PRECISION = 18
-
 export const useSendDetails = (): UseSendDetailsReturnType => {
   const [fieldName, setFieldName] = useState<AmountFieldName>(SendFormFields.FiatAmount)
   const [loading, setLoading] = useState<boolean>(false)
   const history = useHistory()
   const toast = useToast()
   const translate = useTranslate()
+  const asset = useWatch({ name: SendFormFields.Asset }) as SendInput[SendFormFields.Asset]
   const {
     clearErrors,
     getValues,
     setValue,
     setError,
     formState: { errors }
-  } = useFormContext()
-  const [asset, address] = useWatch({ name: [SendFormFields.Asset, SendFormFields.Address] })
+  } = useFormContext<SendInput>()
+  const address = useWatch({ name: SendFormFields.Address }) as SendInput[SendFormFields.Address]
   const { balances, error: balanceError, loading: balancesLoading } = useFlattenedBalances()
   const { assetBalance, accountBalances } = useAccountBalances({ asset, balances })
   const chainAdapter = useChainAdapters()
@@ -73,29 +71,22 @@ export const useSendDetails = (): UseSendDetailsReturnType => {
   const adapter = chainAdapter.byChain(asset.chain)
 
   const buildTransaction = async (): Promise<{
-    txToSign: ETHSignTx
+    txToSign: ChainAdapters.ChainTxType<ChainTypes>
     estimatedFees: ChainAdapters.FeeDataEstimate<ChainTypes>
   }> => {
-    const values = getValues()
-    if (wallet) {
-      // TODO (technojak) get path and decimals from asset-service
-      const value = bnOrZero(values.crypto.amount)
-        .times(bnOrZero(10).exponentiatedBy(values.asset.precision || ETH_PRECISION))
-        .toFixed(0)
+    if (!wallet) throw new Error('No wallet connected')
 
-      try {
-        const data = await adapter.buildSendTransaction({
-          to: values.address,
-          value,
-          erc20ContractAddress: values.asset.tokenId,
-          wallet
-        })
-        return data
-      } catch (error) {
-        throw error
-      }
-    }
-    throw new Error('No wallet connected')
+    const values = getValues()
+    const value = bnOrZero(values.cryptoAmount)
+      .times(bnOrZero(10).exponentiatedBy(values.asset.precision))
+      .toFixed(0)
+
+    return adapter.buildSendTransaction({
+      to: values.address,
+      value,
+      erc20ContractAddress: values.asset.tokenId,
+      wallet
+    })
   }
 
   const handleNextClick = async () => {
@@ -126,10 +117,22 @@ export const useSendDetails = (): UseSendDetailsReturnType => {
       const fastFee = adapterFees[ChainAdapters.FeeDataKey.Fast]
       const chainAsset = await getAssetData({
         chain: asset.chain,
-        network: NetworkTypes.MAINNET,
+        network: NetworkTypes.MAINNET, // TODO(0xdef1cafe): get this from user prefs/unchained
         tokenId: asset.tokenId
       })
-      const networkFee = bnOrZero(fastFee?.networkFee).div(`1e${chainAsset.precision}`)
+      let networkFee
+      switch (asset.chain) {
+        case ChainTypes.Ethereum: {
+          const ethFee = fastFee as ChainAdapters.FeeData<ChainTypes.Ethereum>
+          networkFee = bnOrZero(fastFee?.feePerUnit)
+            .times(ethFee.chainSpecific.feeLimit)
+            .div(`1e${chainAsset.precision}`)
+          break
+        }
+        default: {
+          throw new Error(`useSendDetails(handleSendMax): unsupported chain ${asset.chain}`)
+        }
+      }
 
       if (asset.tokenId) {
         setValue(SendFormFields.CryptoAmount, accountBalances.crypto.toPrecision())
@@ -167,8 +170,8 @@ export const useSendDetails = (): UseSendDetailsReturnType => {
     return hasValidBalance || 'common.insufficientFunds'
   }
 
-  const cryptoError = get(errors, 'crypto.amount.message', null)
-  const fiatError = get(errors, 'fiat.amount.message', null)
+  const cryptoError = get(errors, 'cryptoAmount.message', null)
+  const fiatError = get(errors, 'fiatAmount.message', null)
   const amountFieldError = cryptoError || fiatError
 
   const toggleCurrency = () => {

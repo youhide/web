@@ -1,7 +1,6 @@
 import { Asset, ChainAdapters, ChainTypes, NetworkTypes } from '@shapeshiftoss/types'
 import { AnimatePresence } from 'framer-motion'
 import React from 'react'
-import { FormProvider, useForm } from 'react-hook-form'
 import {
   Redirect,
   Route,
@@ -11,6 +10,7 @@ import {
   useLocation
 } from 'react-router-dom'
 import { AssetMarketData, useGetAssetData } from 'hooks/useAsset/useAsset'
+import { FormProvider, useForm } from 'lib/formUtils'
 
 import { SelectAssets } from '../../SelectAssets/SelectAssets'
 import { useFormSend } from './hooks/useFormSend/useFormSend'
@@ -25,29 +25,23 @@ export enum SendFormFields {
   Asset = 'asset',
   FeeType = 'feeType',
   EstimatedFees = 'estimatedFees',
-  Crypto = 'crypto',
-  CryptoAmount = 'crypto.amount',
-  CryptoSymbol = 'crypto.symbol',
-  FiatAmount = 'fiat.amount',
-  Fiat = 'fiat',
-  FiatSymbol = 'fiat.symbol',
+  CryptoAmount = 'cryptoAmount',
+  CryptoSymbol = 'cryptoSymbol',
+  FiatAmount = 'fiatAmount',
+  FiatSymbol = 'fiatSymbol',
   Transaction = 'transaction'
 }
 
-export type SendInput = {
+export type SendInput<T extends ChainTypes = ChainTypes> = {
   [SendFormFields.Address]: string
   [SendFormFields.Asset]: AssetMarketData
   [SendFormFields.FeeType]: ChainAdapters.FeeDataKey
-  [SendFormFields.EstimatedFees]: ChainAdapters.FeeDataEstimate<ChainTypes>
-  [SendFormFields.Crypto]: {
-    amount: string
-    symbol: string
-  }
-  [SendFormFields.Fiat]: {
-    amount: string
-    symbol: string
-  }
-  [SendFormFields.Transaction]: unknown
+  [SendFormFields.EstimatedFees]: ChainAdapters.FeeDataEstimate<T>
+  [SendFormFields.CryptoAmount]: string
+  [SendFormFields.CryptoSymbol]: string
+  [SendFormFields.FiatAmount]: string
+  [SendFormFields.FiatSymbol]: string
+  [SendFormFields.Transaction]: ChainAdapters.ChainTxType<T>
 }
 
 type SendFormProps = {
@@ -66,16 +60,14 @@ export const Form = ({ asset: initalAsset }: SendFormProps) => {
       address: '',
       asset: initalAsset,
       feeType: ChainAdapters.FeeDataKey.Average,
-      crypto: {
-        amount: '',
-        symbol: initalAsset?.symbol
-      },
-      fiat: {
-        amount: '',
-        symbol: 'USD' // TODO: localize currency
-      }
+      cryptoAmount: '',
+      cryptoSymbol: initalAsset?.symbol,
+      fiatAmount: '',
+      fiatSymbol: 'USD' // TODO: localize currency
     }
   })
+
+  const { handleSubmit, setValue } = methods
 
   const handleAssetSelect = async (asset: Asset) => {
     const assetMarketData = await getAssetData({
@@ -84,9 +76,11 @@ export const Form = ({ asset: initalAsset }: SendFormProps) => {
       tokenId: asset.tokenId
     })
 
-    methods.setValue(SendFormFields.Asset, assetMarketData)
-    methods.setValue(SendFormFields.Crypto, { symbol: asset.symbol, amount: '' })
-    methods.setValue(SendFormFields.Fiat, { symbol: 'USD', amount: '' })
+    setValue(SendFormFields.Asset, assetMarketData)
+    setValue(SendFormFields.CryptoSymbol, asset.symbol)
+    setValue(SendFormFields.CryptoAmount, '')
+    setValue(SendFormFields.FiatSymbol, 'USD')
+    setValue(SendFormFields.FiatAmount, '')
 
     history.push(SendRoutes.Address)
   }
@@ -98,7 +92,7 @@ export const Form = ({ asset: initalAsset }: SendFormProps) => {
   return (
     <FormProvider {...methods}>
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
-      <form onSubmit={methods.handleSubmit(handleSend)} onKeyDown={checkKeyDown}>
+      <form onSubmit={handleSubmit(handleSend)} onKeyDown={checkKeyDown}>
         <AnimatePresence exitBeforeEnter initial={false}>
           <Switch location={location} key={location.key}>
             <Route
