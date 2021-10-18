@@ -124,6 +124,8 @@ export const Details = () => {
           )}
           {fieldName === SendFormFields.FiatAmount && (
             <TokenRow
+              // eslint-disable-next-line jsx-a11y/no-autofocus
+              autoFocus
               control={control}
               fieldName={SendFormFields.FiatAmount}
               onInputChange={handleInputChange}

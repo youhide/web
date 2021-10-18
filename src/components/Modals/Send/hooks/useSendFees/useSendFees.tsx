@@ -5,14 +5,17 @@ import { useWallet } from 'context/WalletProvider/WalletProvider'
 import { useGetAssetData } from 'hooks/useAsset/useAsset'
 import { bnOrZero } from 'lib/bignumber/bignumber'
 
+import { SendFormFields, SendInput } from '../../Form'
 import { FeePrice } from '../../views/Confirm'
 
 export const useSendFees = () => {
   const [fees, setFees] = useState<FeePrice | null>(null)
-  const { control } = useFormContext()
+  const { control } = useFormContext<SendInput>()
   const getAssetData = useGetAssetData()
-  const { asset, estimatedFees } = useWatch({
-    control
+  const asset = useWatch<SendInput, SendFormFields.Asset>({ control, name: SendFormFields.Asset })
+  const estimatedFees = useWatch<SendInput, SendFormFields.EstimatedFees>({
+    control,
+    name: SendFormFields.EstimatedFees
   })
   const {
     state: { wallet }
@@ -20,23 +23,25 @@ export const useSendFees = () => {
 
   useEffect(() => {
     ;(async () => {
-      if (wallet) {
-        const assetData = await getAssetData({
-          chain: asset?.chain,
-          network: NetworkTypes.MAINNET
-        })
-        const txFees = (Object.keys(estimatedFees) as ChainAdapters.FeeDataKey[]).reduce(
-          (acc: FeePrice, key: ChainAdapters.FeeDataKey) => {
-            const current = estimatedFees[key]
-            const fee = bnOrZero(current.networkFee).div(`1e${assetData.precision}`).toPrecision()
-            const amount = bnOrZero(fee).times(bnOrZero(assetData.price)).toPrecision()
-            acc[key] = { ...current, fee, amount }
-            return acc
-          },
-          {} as FeePrice
-        )
-        setFees(txFees)
-      }
+      if (!wallet) return
+      if (!asset) return
+      if (!estimatedFees) return
+      const { chain } = asset
+      const network = NetworkTypes.MAINNET
+      const assetData = await getAssetData({ chain, network })
+      const txFees = (Object.keys(estimatedFees) as ChainAdapters.FeeDataKey[]).reduce(
+        (acc: FeePrice, key: ChainAdapters.FeeDataKey) => {
+          const current = estimatedFees[key]
+          const { chainSpecific } = current
+          const feePerTx = chainSpecific?.feePerTx
+          const fee = bnOrZero(feePerTx).div(`1e+${assetData.precision}`).toFixed(5)
+          const amount = bnOrZero(fee).times(bnOrZero(assetData.price)).toFixed(2)
+          acc[key] = { ...current, fee, amount }
+          return acc
+        },
+        {} as FeePrice
+      )
+      setFees(txFees)
     })()
     // We only want this effect to run on mount or when the estimatedFees in state change
     // eslint-disable-next-line react-hooks/exhaustive-deps

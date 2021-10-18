@@ -1,10 +1,11 @@
 import { useToast } from '@chakra-ui/react'
 import { ChainAdapter } from '@shapeshiftoss/chain-adapters'
-import { ChainTypes } from '@shapeshiftoss/types'
+import { ChainTypes, NetworkTypes } from '@shapeshiftoss/types'
 import { useTranslate } from 'react-polyglot'
 import { useChainAdapters } from 'context/ChainAdaptersProvider/ChainAdaptersProvider'
 import { useModal } from 'context/ModalProvider/ModalProvider'
 import { useWallet } from 'context/WalletProvider/WalletProvider'
+import { useGetAssetData } from 'hooks/useAsset/useAsset'
 import { bnOrZero } from 'lib/bignumber/bignumber'
 
 import { SendInput } from '../../Form'
@@ -13,6 +14,7 @@ export const useFormSend = () => {
   const toast = useToast()
   const translate = useTranslate()
   const chainAdapter = useChainAdapters()
+  const getAssetData = useGetAssetData()
   const { send } = useModal()
   const {
     state: { wallet }
@@ -21,10 +23,11 @@ export const useFormSend = () => {
   const handleSend = async (data: SendInput) => {
     if (!wallet) return
     try {
-      const adapter = chainAdapter.byChain(data.asset.chain)
-      const value = bnOrZero(data.cryptoAmount)
-        .times(bnOrZero(10).exponentiatedBy(data.asset.precision))
-        .toFixed(0)
+      const { chain } = data.asset
+      // TODO(0xdef1cafe): pull this from user prefs when implemented
+      const network = NetworkTypes.MAINNET
+      const adapter = chainAdapter.byChain(chain)
+      const assetData = await getAssetData({ chain, network })
 
       const { estimatedFees, feeType } = data
       const { feePerUnit } = estimatedFees[feeType]
@@ -33,14 +36,18 @@ export const useFormSend = () => {
       switch (data.asset.chain) {
         case ChainTypes.Ethereum: {
           const ethAdapter = adapter as ChainAdapter<ChainTypes.Ethereum>
-          const txToSend = await ethAdapter.buildSendTransaction({
+          // TODO(0xdef1cafe): change this unit from ether to wei when unchained is updated
+          const value = bnOrZero(data.cryptoAmount).toPrecision(assetData.precision)
+          const payload = {
             to: data.address,
             value,
             erc20ContractAddress: data.asset.tokenId,
             wallet,
             fee: feePerUnit,
             gasLimit: estimatedFees[feeType].chainSpecific?.feeLimit
-          })
+          }
+          console.info('buildSendTransaction payload', payload)
+          const txToSend = await ethAdapter.buildSendTransaction(payload)
           txToSign = txToSend.txToSign
           break
         }
@@ -61,8 +68,9 @@ export const useFormSend = () => {
       }
 
       const signedTx = await adapter.signTransaction({ txToSign, wallet })
+      console.info('signedTx', signedTx)
 
-      await adapter.broadcastTransaction(signedTx)
+      // await adapter.broadcastTransaction(signedTx)
 
       toast({
         title: translate('modals.send.sent', { asset: data.asset.name }),

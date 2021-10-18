@@ -76,9 +76,7 @@ export const useSendDetails = (): UseSendDetailsReturnType => {
     if (!wallet) throw new Error('No wallet connected')
 
     const values = getValues()
-    const value = bnOrZero(values.cryptoAmount)
-      .times(bnOrZero(10).exponentiatedBy(values.asset.precision))
-      .toFixed(0)
+    const value = bnOrZero(values.cryptoAmount).toFixed(values.asset.precision).toString()
 
     return adapter.buildSendTransaction({
       to: values.address,
@@ -91,11 +89,8 @@ export const useSendDetails = (): UseSendDetailsReturnType => {
   const handleNextClick = async () => {
     try {
       setLoading(true)
-      // const { txToSign, estimatedFees } = await buildTransaction()
-      const data = await buildTransaction()
-      console.info(data)
-      // setValue(SendFormFields.Transaction, txToSign)
-      // setValue(SendFormFields.EstimatedFees, estimatedFees)
+      const { estimatedFees } = await buildTransaction()
+      setValue(SendFormFields.EstimatedFees, estimatedFees)
       history.push(SendRoutes.Confirm)
     } catch (error) {
       console.error(error)

@@ -23,6 +23,7 @@ const CryptoInput = (props: InputProps) => (
 )
 
 type TokenRowProps = {
+  autoFocus?: boolean
   control: Control
   fieldName: string
   disabled?: boolean
@@ -33,6 +34,7 @@ type TokenRowProps = {
 } & InputGroupProps
 
 export const TokenRow = ({
+  autoFocus = false,
   control,
   fieldName,
   rules,
@@ -57,6 +59,8 @@ export const TokenRow = ({
         render={({ field: { onChange, value } }) => {
           return (
             <NumberFormat
+              // eslint-disable-next-line jsx-a11y/no-autofocus
+              autoFocus={autoFocus}
               inputMode='decimal'
               thousandSeparator={localeParts.group}
               decimalSeparator={localeParts.decimal}

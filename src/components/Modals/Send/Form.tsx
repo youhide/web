@@ -29,7 +29,6 @@ export enum SendFormFields {
   CryptoSymbol = 'cryptoSymbol',
   FiatAmount = 'fiatAmount',
   FiatSymbol = 'fiatSymbol'
-  // Transaction = 'transaction'
 }
 
 export type SendInput<T extends ChainTypes = ChainTypes> = {
@@ -41,7 +40,6 @@ export type SendInput<T extends ChainTypes = ChainTypes> = {
   [SendFormFields.CryptoSymbol]: string
   [SendFormFields.FiatAmount]: string
   [SendFormFields.FiatSymbol]: string
-  // [SendFormFields.Transaction]: ChainAdapters.ChainTxType<T>
 }
 
 type SendFormProps = {

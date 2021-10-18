@@ -22,6 +22,7 @@ import { SlideTransition } from 'components/SlideTransition'
 import { RawText, Text } from 'components/Text'
 import { bnOrZero } from 'lib/bignumber/bignumber'
 
+import { SendFormFields, SendInput } from '../Form'
 import { useSendFees } from '../hooks/useSendFees/useSendFees'
 import { SendRoutes } from '../Send'
 import { TxFeeRadioGroup } from '../TxFeeRadioGroup'
@@ -37,16 +38,37 @@ export const Confirm = () => {
   const {
     control,
     formState: { isSubmitting }
-  } = useFormContext()
+  } = useFormContext<SendInput>()
   const history = useHistory()
   const translate = useTranslate()
-  const { address, asset, crypto, fiat, feeType } = useWatch({ control })
+  const address = useWatch<SendInput, SendFormFields.Address>({
+    control,
+    name: SendFormFields.Address
+  })
+  const asset = useWatch<SendInput, SendFormFields.Asset>({ control, name: SendFormFields.Asset })
+  const cryptoAmount = useWatch<SendInput, SendFormFields.CryptoAmount>({
+    control,
+    name: SendFormFields.CryptoAmount
+  })
+  const cryptoSymbol = useWatch<SendInput, SendFormFields.CryptoSymbol>({
+    control,
+    name: SendFormFields.CryptoSymbol
+  })
+  const fiatAmount = useWatch<SendInput, SendFormFields.FiatAmount>({
+    control,
+    name: SendFormFields.FiatAmount
+  })
+  const feeType = useWatch<SendInput, SendFormFields.FeeType>({
+    control,
+    name: SendFormFields.FeeType
+  })
   const { fees } = useSendFees()
+  console.info('fees', fees)
 
   const amountWithFees = useMemo(() => {
     const { amount } = fees ? fees[feeType as ChainAdapters.FeeDataKey] : { amount: 0 }
-    return bnOrZero(fiat.amount).plus(amount).toString()
-  }, [fiat.amount, fees, feeType])
+    return bnOrZero(fiatAmount).plus(amount).toString()
+  }, [fiatAmount, fees, feeType])
 
   return (
     <SlideTransition>
@@ -60,10 +82,10 @@ export const Confirm = () => {
             fontWeight='bold'
             lineHeight='shorter'
             textTransform='uppercase'
-            symbol={crypto.symbol}
-            value={crypto.amount}
+            symbol={cryptoSymbol}
+            value={cryptoAmount}
           />
-          <Amount.Fiat color='gray.500' fontSize='xl' lineHeight='short' value={fiat.amount} />
+          <Amount.Fiat color='gray.500' fontSize='xl' lineHeight='short' value={fiatAmount} />
         </Flex>
         <Stack spacing={4} mb={4}>
           <Row>
@@ -110,8 +132,8 @@ export const Confirm = () => {
               <Amount.Crypto
                 textTransform='uppercase'
                 maximumFractionDigits={4}
-                symbol={crypto.symbol}
-                value={crypto.amount}
+                symbol={cryptoSymbol}
+                value={cryptoAmount}
               />
             </Row.Value>
             <Row.Label>
