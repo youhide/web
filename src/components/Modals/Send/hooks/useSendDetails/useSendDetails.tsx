@@ -76,7 +76,7 @@ export const useSendDetails = (): UseSendDetailsReturnType => {
     if (!wallet) throw new Error('No wallet connected')
 
     const values = getValues()
-    const value = bnOrZero(values.cryptoAmount).toFixed(values.asset.precision).toString()
+    const value = bnOrZero(values.cryptoAmount).times(`1e+${asset.precision}`).toFixed(0)
 
     return adapter.buildSendTransaction({
       to: values.address,

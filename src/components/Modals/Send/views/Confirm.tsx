@@ -63,7 +63,6 @@ export const Confirm = () => {
     name: SendFormFields.FeeType
   })
   const { fees } = useSendFees()
-  console.info('fees', fees)
 
   const amountWithFees = useMemo(() => {
     const { amount } = fees ? fees[feeType as ChainAdapters.FeeDataKey] : { amount: 0 }

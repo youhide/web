@@ -28,16 +28,14 @@ export const useFormSend = () => {
       const network = NetworkTypes.MAINNET
       const adapter = chainAdapter.byChain(chain)
       const assetData = await getAssetData({ chain, network })
+      const value = bnOrZero(data.cryptoAmount).times(`1e+${assetData.precision}`).toFixed(0)
 
       const { estimatedFees, feeType } = data
       const { feePerUnit } = estimatedFees[feeType]
 
-      let txToSign
       switch (data.asset.chain) {
         case ChainTypes.Ethereum: {
           const ethAdapter = adapter as ChainAdapter<ChainTypes.Ethereum>
-          // TODO(0xdef1cafe): change this unit from ether to wei when unchained is updated
-          const value = bnOrZero(data.cryptoAmount).toPrecision(assetData.precision)
           const payload = {
             to: data.address,
             value,
@@ -46,31 +44,27 @@ export const useFormSend = () => {
             fee: feePerUnit,
             gasLimit: estimatedFees[feeType].chainSpecific?.feeLimit
           }
-          console.info('buildSendTransaction payload', payload)
-          const txToSend = await ethAdapter.buildSendTransaction(payload)
-          txToSign = txToSend.txToSign
+          const { txToSign } = await ethAdapter.buildSendTransaction(payload)
+          const signedTx = await adapter.signTransaction({ txToSign, wallet })
+          await adapter.broadcastTransaction(signedTx)
           break
         }
         case ChainTypes.Bitcoin: {
           const btcAdapter = adapter as ChainAdapter<ChainTypes.Bitcoin>
-          const txToSend = await btcAdapter.buildSendTransaction({
+          const { txToSign } = await btcAdapter.buildSendTransaction({
             to: data.address,
             value,
             wallet,
             fee: feePerUnit
           })
-          txToSign = txToSend.txToSign
-          break
+          /* const signedTx = */ await adapter.signTransaction({ txToSign, wallet })
+          // await adapter.broadcastTransaction(signedTx)
+          throw new Error('btc sending unimplemented/tested')
         }
         default: {
           throw new Error(`useFormSend: unsupported chain ${data.asset.chain}`)
         }
       }
-
-      const signedTx = await adapter.signTransaction({ txToSign, wallet })
-      console.info('signedTx', signedTx)
-
-      // await adapter.broadcastTransaction(signedTx)
 
       toast({
         title: translate('modals.send.sent', { asset: data.asset.name }),
@@ -85,8 +79,8 @@ export const useFormSend = () => {
       })
     } catch (error) {
       toast({
-        title: translate('modals.send.sent'),
-        description: translate('modals.send.somethingWentWrong'),
+        title: translate('modals.send.errorTitle'),
+        description: translate('modals.send.errorDescription'),
         status: 'error',
         duration: 9000,
         isClosable: true,
