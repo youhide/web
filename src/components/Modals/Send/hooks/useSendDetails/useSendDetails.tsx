@@ -8,7 +8,7 @@ import { useHistory } from 'react-router-dom'
 import { useChainAdapters } from 'context/ChainAdaptersProvider/ChainAdaptersProvider'
 import { useWallet } from 'context/WalletProvider/WalletProvider'
 import { useGetAssetData } from 'hooks/useAsset/useAsset'
-import { useFlattenedBalances } from 'hooks/useBalances/useFlattenedBalances'
+import { useBalances } from 'hooks/useBalances/useBalances'
 import { bnOrZero } from 'lib/bignumber/bignumber'
 
 import { SendFormFields, SendInput } from '../../Form'
@@ -45,7 +45,7 @@ export const useSendDetails = (): UseSendDetailsReturnType => {
     formState: { errors }
   } = useFormContext<SendInput>()
   const address = useWatch({ name: SendFormFields.Address }) as SendInput[SendFormFields.Address]
-  const { balances, error: balanceError, loading: balancesLoading } = useFlattenedBalances()
+  const { balances, error: balanceError, loading: balancesLoading } = useBalances()
   const { assetBalance, accountBalances } = useAccountBalances({ asset, balances })
   const chainAdapter = useChainAdapters()
   const {
@@ -106,7 +106,7 @@ export const useSendDetails = (): UseSendDetailsReturnType => {
       const adapterFees = await adapter.getFeeData({
         to: address,
         from: fromAddress,
-        value: asset.tokenId ? '0' : assetBalance.balance,
+        value: asset.tokenId ? '0' : assetBalance,
         contractAddress: asset.tokenId
       })
       // Assume fast fee for send max

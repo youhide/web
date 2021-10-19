@@ -12,7 +12,7 @@ type UseGetAssetDataParams = {
   tokenId?: string
 }
 
-type UseGetAssetDataReturn = MarketData &
+export type UseGetAssetDataReturn = MarketData &
   Asset & {
     description: string
   }

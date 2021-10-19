@@ -46,7 +46,8 @@ export const useFormSend = () => {
           }
           const { txToSign } = await ethAdapter.buildSendTransaction(payload)
           const signedTx = await adapter.signTransaction({ txToSign, wallet })
-          await adapter.broadcastTransaction(signedTx)
+          console.info('signedTx', signedTx)
+          // await adapter.broadcastTransaction(signedTx)
           break
         }
         case ChainTypes.Bitcoin: {

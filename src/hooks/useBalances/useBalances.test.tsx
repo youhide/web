@@ -8,7 +8,7 @@ import { useBalances } from './useBalances'
 jest.mock('context/WalletProvider/WalletProvider')
 jest.mock('context/ChainAdaptersProvider/ChainAdaptersProvider')
 
-const balances = {
+const account = {
   network: 'ethereum',
   symbol: 'ETH',
   address: '0xMyWalletAddress',
@@ -35,7 +35,7 @@ const setup = ({
   adapter = () => ({
     getType: () => ChainTypes.Ethereum,
     getAddress: () => Promise.resolve('0xMyWalletAddress'),
-    getBalance: () => Promise.resolve(balances)
+    getAccount: () => Promise.resolve(account)
   })
 }) => {
   ;(useWallet as jest.Mock<unknown>).mockImplementation(() => ({
@@ -56,7 +56,7 @@ describe('useBalances', () => {
 
       expect(result.current.loading).toBe(false)
       expect(result.current.error).toBeUndefined()
-      expect(result.current.balances).toEqual({ [ChainTypes.Ethereum]: balances })
+      expect(result.current.balances).toEqual({ [ChainTypes.Ethereum]: account })
     })
   })
 
@@ -66,7 +66,7 @@ describe('useBalances', () => {
         adapter: () => ({
           getType: () => ChainTypes.Ethereum,
           getAddress: () => Promise.reject('Error while getting address'),
-          getBalance: () => Promise.reject('No balances for you')
+          getAccount: () => Promise.reject('No account for you ser')
         })
       })
 

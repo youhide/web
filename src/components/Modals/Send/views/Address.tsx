@@ -21,7 +21,7 @@ import { useChainAdapters } from 'context/ChainAdaptersProvider/ChainAdaptersPro
 import { useModal } from 'context/ModalProvider/ModalProvider'
 
 import { AddressInput } from '../AddressInput/AddressInput'
-import { SendFormFields } from '../Form'
+import { SendFormFields, SendInput } from '../Form'
 import { SendRoutes } from '../Send'
 
 export const Address = () => {
@@ -30,7 +30,8 @@ export const Address = () => {
   const {
     formState: { errors }
   } = useFormContext()
-  const [address, asset] = useWatch({ name: [SendFormFields.Address, SendFormFields.Asset] })
+  const address = useWatch<SendInput, SendFormFields.Address>({ name: SendFormFields.Address })
+  const asset = useWatch<SendInput, SendFormFields.Asset>({ name: SendFormFields.Asset })
   const chainAdapters = useChainAdapters()
   const adapter = chainAdapters.byChain(ChainTypes.Ethereum)
   const { send } = useModal()

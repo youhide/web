@@ -3,14 +3,18 @@ import { useCallback, useEffect, useState } from 'react'
 import { useChainAdapters } from 'context/ChainAdaptersProvider/ChainAdaptersProvider'
 import { useWallet } from 'context/WalletProvider/WalletProvider'
 
+export type BalanceByChain = {
+  [k in ChainTypes]: ChainAdapters.Account<k>
+}
+
 type UseBalancesReturnType = {
-  balances: Record<string, ChainAdapters.Account<ChainTypes>>
+  balances: Partial<BalanceByChain>
   error?: Error | unknown
   loading: boolean
 }
 
 export const useBalances = (): UseBalancesReturnType => {
-  const [balances, setBalances] = useState<Record<string, ChainAdapters.Account<ChainTypes>>>({})
+  const [balances, setBalances] = useState<UseBalancesReturnType['balances']>({})
   const [error, setError] = useState<Error | unknown>()
   const [loading, setLoading] = useState<boolean>(false)
   const chainAdapter = useChainAdapters()
@@ -19,19 +23,21 @@ export const useBalances = (): UseBalancesReturnType => {
   } = useWallet()
 
   const getBalances = useCallback(async () => {
-    if (wallet) {
-      const supportedAdapters = chainAdapter.getSupportedAdapters()
-      const acc: Record<string, ChainAdapters.Account<ChainTypes>> = {}
-      for (const getAdapter of supportedAdapters) {
-        const adapter = getAdapter()
-        const key = adapter.getType()
-        const address = await adapter.getAddress({ wallet })
-        const balanceResponse = await adapter.getAccount(address)
-        if (!balanceResponse) continue
-        acc[key] = balanceResponse
+    if (!wallet) return
+    const supportedAdapters = chainAdapter.getSupportedAdapters()
+    let acc: Partial<BalanceByChain> = {}
+    for (const getAdapter of supportedAdapters) {
+      const adapter = getAdapter()
+      const key = adapter.getType()
+      const address = await adapter.getAddress({ wallet })
+      const balanceResponse = await adapter.getAccount(address)
+      if (!balanceResponse) continue
+      acc = {
+        ...acc,
+        [key]: balanceResponse
       }
-      return acc
     }
+    return acc
     // We aren't passing chainAdapter as it will always be the same object and should never change
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [walletInfo?.deviceId])
