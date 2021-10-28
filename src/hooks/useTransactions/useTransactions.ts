@@ -2,7 +2,7 @@ import { AssetService } from '@shapeshiftoss/asset-service'
 import { chainAdapters, ChainTypes, NetworkTypes } from '@shapeshiftoss/types'
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useChainAdapters } from 'context/ChainAdaptersProvider/ChainAdaptersProvider'
 import { useWallet } from 'context/WalletProvider/WalletProvider'
 import { useStateIfMounted } from 'hooks/useStateIfMounted/useStateIfMounted'
@@ -25,9 +25,10 @@ export type UseTransactionsReturnType = {
 }
 
 export type UseTransactionsPropType = {
-  chain?: ChainTypes | undefined
-  contractAddress?: string | undefined
-  symbol?: string | undefined
+  chain?: ChainTypes
+  contractAddress?: string
+  symbol?: string
+  polling?: boolean
 }
 
 export enum TxTypeEnum {
@@ -37,7 +38,8 @@ export enum TxTypeEnum {
 
 export enum TxStatusEnum {
   Confirmed = 'confirmed',
-  Failed = 'failed'
+  Failed = 'failed',
+  Pending = 'pending'
 }
 
 export const getDate = (timestamp: number) =>
@@ -78,8 +80,10 @@ const formatTransactions = (
 export const useTransactions = ({
   chain,
   contractAddress = '',
-  symbol = ''
+  symbol = '',
+  polling = false
 }: UseTransactionsPropType = {}): UseTransactionsReturnType => {
+  const pollingInterval: { current: NodeJS.Timeout | undefined } = useRef()
   const [loading, setLoading] = useStateIfMounted<boolean | undefined>(false)
   const [txHistory, setTxHistory] = useStateIfMounted<
     Record<string, FormatTransactionType[]> | undefined
@@ -157,18 +161,32 @@ export const useTransactions = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [walletInfo?.deviceId, chain, contractAddress, symbol])
 
+  const getTransactions = () => {
+    setLoading(true)
+    getTxHistory()
+      .then((txHistoryResponse: Record<string, FormatTransactionType[]> | undefined) => {
+        txHistoryResponse && setTxHistory(txHistoryResponse)
+      })
+      .finally(() => setLoading(false))
+  }
+
   useEffect(() => {
     if (wallet) {
-      setLoading(true)
-      getTxHistory()
-        .then((txHistoryResponse: Record<string, FormatTransactionType[]> | undefined) => {
-          txHistoryResponse && setTxHistory(txHistoryResponse)
-        })
-        .finally(() => setLoading(false))
+      if (!polling) getTransactions()
+      else {
+        const interval = setInterval(async () => {
+          console.log('poll')
+          getTransactions()
+        }, 10000)
+        pollingInterval.current = interval
+      }
+    }
+    return () => {
+      clearInterval(pollingInterval.current as NodeJS.Timeout)
     }
     // TODO: Same as above dependency list for 'getTxHistory' function
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [walletInfo?.deviceId, getTxHistory])
+  }, [walletInfo?.deviceId, getTxHistory, polling])
 
   return {
     loading,
