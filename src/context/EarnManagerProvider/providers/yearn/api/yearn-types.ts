@@ -8,7 +8,7 @@ export type Allowanceinput = {
   userAddress: string
 }
 
-export type ApproveInput = {
+export type ApproveTxInput = {
   bip32Params: BIP32Params
   dryRun?: boolean
   spenderAddress: string
@@ -18,12 +18,12 @@ export type ApproveInput = {
   wallet: HDWallet
 }
 
-export type ApproveEstimatedGasInput = Pick<
-  ApproveInput,
+export type ApproveTxEstimatedGasInput = Pick<
+  ApproveTxInput,
   'spenderAddress' | 'userAddress' | 'tokenContractAddress'
 >
 
-export type DepositInput = {
+export type VaultTxInput = {
   bip32Params: BIP32Params
   dryRun?: boolean
   tokenContractAddress: string
@@ -33,20 +33,12 @@ export type DepositInput = {
   amountDesired: BigNumber
 }
 
-export type WithdrawInput = {
-  bip32Params?: BIP32Params
-  dryRun?: boolean
-  tokenContractAddress: string
-  userAddress: string
-  vaultAddress?: string
-  wallet?: HDWallet
-  amountDesired: BigNumber
-}
+export type VaultTxEstimatedGasInput = Pick<
+  VaultTxInput,
+  'amountDesired' | 'userAddress' | 'vaultAddress'
+>
 
-export type BalanceInput = {
-  userAddress: string
-  vaultAddress: string
-}
+export type BalanceInput = Pick<VaultTxInput, 'userAddress' | 'vaultAddress'>
 
 export type APYInput = {
   vaultAddress: string
