@@ -2,12 +2,15 @@ import { ComponentWithAs, IconProps } from '@chakra-ui/react'
 import { WebUSBKeepKeyAdapter } from '@shapeshiftoss/hdwallet-keepkey-webusb'
 import { MetaMaskAdapter } from '@shapeshiftoss/hdwallet-metamask'
 import { NativeAdapter } from '@shapeshiftoss/hdwallet-native'
+import { PortisAdapter } from '@shapeshiftoss/hdwallet-portis'
 import { RouteProps } from 'react-router-dom'
+import { FoxIcon } from 'components/Icons/FoxIcon'
 import { KeepKeyIcon } from 'components/Icons/KeepKeyIcon'
 import { MetaMaskIcon } from 'components/Icons/MetaMaskIcon'
-import { ShapeShiftVertical } from 'components/Icons/SSVerticalIcon'
+import { PortisIcon } from 'components/Icons/PortisIcon'
 
-import { PinModal } from './KeepKey/PinModal'
+import { KeepKeyConnect } from './KeepKey/components/Connect'
+import { KeepKeySuccess } from './KeepKey/components/Success'
 import { MetaStart } from './MetaMask/components/MetaStart'
 import { MetaSuccess } from './MetaMask/components/MetaSuccess'
 import { NativeImport } from './NativeWallet/components/NativeImport'
@@ -16,6 +19,8 @@ import { NativeSeed } from './NativeWallet/components/NativeSeed/NativeSeed'
 import { NativeStart } from './NativeWallet/components/NativeStart'
 import { NativeSuccess } from './NativeWallet/components/NativeSuccess/NativeSuccess'
 import { NativeTestPhrase } from './NativeWallet/components/NativeTestPhrase/NativeTestPhrase'
+import { PortisStart } from './Portis/components/PortisStart'
+import { PortisSuccess } from './Portis/components/PortisSuccess'
 
 export interface SupportedWalletInfo {
   adapter: any
@@ -24,10 +29,17 @@ export interface SupportedWalletInfo {
   routes: RouteProps[]
 }
 
-export const SUPPORTED_WALLETS: { [key: string]: SupportedWalletInfo } = {
-  native: {
+export enum KeyManager {
+  Native = 'native',
+  KeepKey = 'keepkey',
+  MetaMask = 'metamask',
+  Portis = 'portis'
+}
+
+export const SUPPORTED_WALLETS: Record<KeyManager, SupportedWalletInfo> = {
+  [KeyManager.Native]: {
     adapter: NativeAdapter,
-    icon: ShapeShiftVertical,
+    icon: FoxIcon,
     name: 'ShapeShift',
     routes: [
       { path: '/native/password', component: NativePassword },
@@ -38,19 +50,31 @@ export const SUPPORTED_WALLETS: { [key: string]: SupportedWalletInfo } = {
       { path: '/native/success', component: NativeSuccess }
     ]
   },
-  keepkey: {
+  [KeyManager.KeepKey]: {
     adapter: WebUSBKeepKeyAdapter,
     icon: KeepKeyIcon,
     name: 'KeepKey',
-    routes: [{ path: '/keepkey/pin', component: PinModal }]
+    routes: [
+      { path: '/keepkey/connect', component: KeepKeyConnect },
+      { path: '/keepkey/success', component: KeepKeySuccess }
+    ]
   },
-  metamask: {
+  [KeyManager.MetaMask]: {
     adapter: MetaMaskAdapter,
     icon: MetaMaskIcon,
     name: 'MetaMask',
     routes: [
       { path: '/metamask/start', component: MetaStart },
       { path: '/metamask/success', component: MetaSuccess }
+    ]
+  },
+  portis: {
+    adapter: PortisAdapter,
+    icon: PortisIcon,
+    name: 'Portis',
+    routes: [
+      { path: '/portis/start', component: PortisStart },
+      { path: '/portis/success', component: PortisSuccess }
     ]
   }
 }

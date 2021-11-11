@@ -1,5 +1,11 @@
 import { useToast } from '@chakra-ui/react'
-import { chainAdapters, ChainTypes, NetworkTypes, UtxoAccountType } from '@shapeshiftoss/types'
+import {
+  AssetDataSource,
+  chainAdapters,
+  ChainTypes,
+  NetworkTypes,
+  UtxoAccountType
+} from '@shapeshiftoss/types'
 import { act, renderHook } from '@testing-library/react-hooks'
 import { useChainAdapters } from 'context/ChainAdaptersProvider/ChainAdaptersProvider'
 import { useModal } from 'context/ModalProvider/ModalProvider'
@@ -31,6 +37,7 @@ const formData: SendInput = {
     volume: '',
     changePercent24Hr: 0,
     chain: ChainTypes.Ethereum,
+    dataSource: AssetDataSource.CoinGecko,
     network: NetworkTypes.MAINNET,
     symbol: 'ETH',
     name: 'Ethereum',
@@ -47,25 +54,25 @@ const formData: SendInput = {
   feeType: chainAdapters.FeeDataKey.Average,
   estimatedFees: {
     [chainAdapters.FeeDataKey.Slow]: {
+      txFee: '3100000000000000',
       chainSpecific: {
-        feeLimit: '42000',
-        feePerTx: '3100000000000000'
-      },
-      feePerUnit: '76000000000'
+        gasLimit: '42000',
+        gasPrice: '10000000000'
+      }
     },
     [chainAdapters.FeeDataKey.Average]: {
+      txFee: '3100000000000000',
       chainSpecific: {
-        feeLimit: '42000',
-        feePerTx: '4900000000000000'
-      },
-      feePerUnit: '118000000000'
+        gasLimit: '42000',
+        gasPrice: '10000000000'
+      }
     },
     [chainAdapters.FeeDataKey.Fast]: {
+      txFee: '3100000000000000',
       chainSpecific: {
-        feeLimit: '42000',
-        feePerTx: '6120000000000000'
-      },
-      feePerUnit: '145845250000'
+        gasLimit: '42000',
+        gasPrice: '10000000000'
+      }
     }
   },
   crypto: {
@@ -119,7 +126,8 @@ describe('useFormSend', () => {
         byChain: () => ({
           buildSendTransaction: () => Promise.resolve(textTxToSign),
           signTransaction: () => Promise.resolve(testSignedTx),
-          broadcastTransaction: () => Promise.resolve(expectedTx)
+          broadcastTransaction: () => Promise.resolve(expectedTx),
+          getType: () => ChainTypes.Ethereum
         })
       }))
 
@@ -149,7 +157,8 @@ describe('useFormSend', () => {
       ;(useChainAdapters as jest.Mock<unknown>).mockImplementation(() => ({
         byChain: () => ({
           buildSendTransaction: () => Promise.resolve(textTxToSign),
-          signAndBroadcastTransaction
+          signAndBroadcastTransaction,
+          getType: () => ChainTypes.Ethereum
         })
       }))
 

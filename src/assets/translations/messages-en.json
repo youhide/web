@@ -6,11 +6,19 @@
     "cancel": "Cancel",
     "continue": "Continue",
     "confirm": "Confirm",
+    "reject": "Reject",
     "noResultsFound": "No results found.",
     "insufficientFunds": "Insufficient Funds",
     "invalidAddress": "Invalid Address",
     "deposit": "Deposit",
-    "withdraw": "Withdraw"
+    "withdraw": "Withdraw",
+    "getStarted": "Get Started",
+    "connectWallet": "Connect Wallet",
+    "seeAll": "See All",
+    "somethingWentWrong": "Something went wrong",
+    "somethingWentWrongBody": "Something went wrong",
+    "transactionFailed": "Transaction Failed",
+    "transactionFailedBody": "Transaction Failed"
   },
   "dashboard": {
     "portfolio": {
@@ -20,10 +28,41 @@
       "portfolioBalance": "Portfolio Balance",
       "balance": "Balance",
       "price": "Price",
+      "value": "Value",
       "allocation": "Allocation"
     },
     "recentTransactions": {
       "recentTransactions": "Recent Transactions"
+    }
+  },
+  "earn": {
+    "earn": "Earn",
+    "earnBody": "Earn interest by depositing your assets.",
+    "overview": "Overview",
+    "liquidityPools": "Liquidity Pools",
+    "stakingVaults": "Staking & Vaults",
+    "farming": "Farming",
+    "totalEarningBalance": "Total Earning Balance",
+    "stakingBalance": "Staking Balance",
+    "farmingBalance": "Farming Balance",
+    "liquidityPoolBalance": "Liquidity Pool Balance",
+    "poolValue": "Pool Value",
+    "rewardValue": "Reward Value",
+    "currentAPY": "Current APY",
+    "currentAPR": "Current APR",
+    "empty": {
+      "farming": {
+        "body": "You are not currently farming anything.",
+        "cta": "View Opportunities"
+      },
+      "stakingVaults": {
+        "body": "You have not deposited into a vault or staked your assets.",
+        "cta": "View Opportunities"
+      },
+      "pools": {
+        "body": "You have not deposited into any liquidity pools.",
+        "cta": "View Opportunities"
+      }
     }
   },
   "navBar": {
@@ -42,7 +81,7 @@
     "fee": "Fee",
     "status": "Status",
     "confirmed": "Confirmed",
-    "pending": "pending",
+    "pending": "Pending",
     "failed": "Failed",
     "network": "Network",
     "blockHeight": "Block Height",
@@ -52,6 +91,23 @@
   "trade": {
     "searchingRate": "Searching for best rate...",
     "previewTrade": "Preview Trade",
+    "rate": "Rate",
+    "minerFee": "Miner Fee",
+    "shapeshiftFee": "ShapeShift Fee",
+    "confirmTrade": "Confirm Trade",
+    "confirmAndTrade": "Confirm and Trade",
+    "complete": "Trade Complete",
+    "approveAsset": "Approve interacting with %{symbol}",
+    "needPermission": "We need your permission to use your %{symbol}",
+    "whyNeedThis": "Why do I need to do this?",
+    "estimatedGasFee": "Estimated Gas Fee",
+    "approvingAsset": "Approving %{symbol}",
+    "viewTransaction": "View Transaction",
+    "tooltip": {
+      "rate": "This is the rate",
+      "minerFee": "This is the Miner Fee",
+      "shapeshiftFee": "This is the Shapeshift Fee"
+    },
     "errors": {
       "notEnoughEth": "Not enough Ethereum for the gas fee on this transaction. Est gas fee %{estimatedMinerFee}",
       "amountToSmall": "Amount too small. The minimum trade amount for this pair is %{minLimit}.",
@@ -68,6 +124,17 @@
     }
   },
   "modals": {
+    "keepKey": {
+      "passphrase": {
+        "errors": {
+          "unknown": "There was an error setting your passphrase",
+          "empty": "You are using an empty passphrase"
+        },
+        "header": "Enter Your Passphrase",
+        "body": "After submitting your passphrase, use the button on the KeepKey to approve it",
+        "button": "Set Passphrase"
+      }
+    },
     "send": {
       "getBalanceError": "Error getting wallet balances",
       "broadcastingTransaction": "Broadcasting Transaction",
@@ -108,13 +175,20 @@
       "copyFailed": "Failed to copy %{symbol} receive address to clipboard",
       "copyFailedDescription": "Please copy the address manually",
       "setAmount": "Set Amount",
-      "verify": "Verify"
+      "verify": "Verify",
+      "verified": "Verified",
+      "notVerified": "Address Mismatch"
     },
     "deposit": {
       "amountToDeposit": "Amount To Deposit",
       "estimatedReturns": "Estimated Yearly Returns*",
       "estimateDisclaimer": "*Estimates fluctuate with market conditions.",
       "footerDisclaimer": "This transaction requires gas fees for two transactions, by continuing you agree to our terms of service.",
+      "slippageSettings": "Slippage Settings"
+    },
+    "withdraw": {
+      "amountToWithdraw": "Amount To Withdraw",
+      "footerDisclaimer": "This transaction will require one transaction gas fee.",
       "slippageSettings": "Slippage Settings"
     },
     "approve": {
@@ -126,35 +200,73 @@
       "reject": "Reject"
     },
     "confirm": {
-      "header": "Confirm Deposit",
+      "withdraw": {
+        "header": "Confirm Withdraw"
+      },
+      "deposit": {
+        "header": "Confirm Deposit",
+        "averageApr": "Average APR",
+        "estimatedReturns": "Estimated Yearly Returns*",
+        "preFooter": "Rewards acure automatically"
+      },
+      "withdrawFrom": "Withdraw From",
+      "withdrawTo": "Withdraw To",
       "depositTo": "Deposit To",
-      "averageApr": "Average APR",
+      "averageApy": "Average APY",
       "estimatedReturns": "Estimated Yearly Returns*",
       "estimatedGas": "Estimated Gas Fee",
-      "preFooter": "Rewards acure automatically",
+      "preFooter": "Rewards accrue automatically",
       "signBroadcast": "Sign & Broadcast",
       "cancel": "Cancel"
     },
-    "broadcast": {
+    "status": {
       "header": {
-        "pending": "Broadcasting Transaction",
-        "success": "Successfully Broadcast Transaction",
-        "error": "Error Broadcasting Transaction"
+        "pending": "Waiting on Confirmation",
+        "success": "Transaction Confirmed",
+        "failed": "Transaction Execution Failed"
       },
       "depositTo": "Deposit To",
       "transactionId": "TX ID",
-      "averageApr": "Average APR",
+      "averageApy": "Average APY",
       "estimatedReturns": "Estimated Yearly Returns*",
       "estimatedGas": "Estimated Gas Fee",
+      "gasUsed": "Total Gas Fee",
       "continue": "View My Position",
+      "viewAsset": "View Asset",
       "close": "Close"
     }
   },
   "walletProvider": {
+    "errors": {
+      "walletNotFound": "Unable to communicate with your wallet"
+    },
     "keepKey": {
-      "header": "Enter Your Pin",
-      "body": "Use PIN layout shown on your device to find the location to press on the pin pad.",
-      "button": "Unlock"
+      "errors": {
+        "unknown": "An unexpected error occurred communicating with your KeepKey",
+        "pinCancelled": "PIN entry was cancelled",
+        "pinInvalid": "The PIN you entered is not valid",
+        "pinMismatch": "The two PINs you entered do not match"
+      },
+      "connect": {
+        "header": "Pair Your KeepKey",
+        "body": "Click Pair then select your KeepKey from the popup window",
+        "button": "Pair"
+      },
+      "pin": {
+        "header": "Enter Your Pin",
+        "body": "Use PIN layout shown on your device to find the location to press on the pin pad.",
+        "button": "Unlock"
+      },
+      "newPin": {
+        "header": "Enter Your New Pin",
+        "body": "Use PIN layout shown on your device to find the location to press on the pin pad.",
+        "button": "Confirm"
+      },
+      "newPinConfirm": {
+        "header": "Confirm Your New Pin",
+        "body": "Use PIN layout shown on your device to find the location to press on the pin pad.",
+        "button": "Save PIN"
+      }
     },
     "shapeShift": {
       "nativeImport": {
@@ -247,16 +359,18 @@
         "sell": "Sell",
         "trade": "Trade"
       },
+      "underlyingAssets": "Underlying Assets",
       "rewards": {
         "farmingRewards": "Farming Rewards",
         "currentRewards": "Current Rewards",
-        "currentAPR": "Current APR",
+        "currentAPY": "Current APY",
         "yourRewards": "Your Rewards",
-        "currentAPRLabel": "The current APR for your rewards",
+        "currentAPYLabel": "The current APY for your rewards",
         "claimRewards": "Claim Rewards"
       },
       "accounts": "Accounts",
-      "staking": "Staking",
+      "stakingVaults": "Staking & Vaults",
+      "stakingBody": "Earn passive income by staking or deposting your assets into a vault.",
       "pools": "Pools"
     }
   },

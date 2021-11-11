@@ -46,10 +46,12 @@ function variantGhost(props: Record<string, any>) {
       bg: mode(`${c}.50`, darkHoverBg)(props)
     },
     _active: {
-      bg: mode(`${c}.200`, darkActiveBg)(props)
+      bg: mode(`${c}.200`, darkActiveBg)(props),
+      color: mode('white', `${c}.200`)(props)
     },
     _checked: {
-      bg: mode(`${c}.100`, darkActiveBg)(props)
+      bg: mode(`${c}.200`, darkActiveBg)(props),
+      color: mode('white', `${c}.200`)(props)
     }
   }
 }
@@ -84,6 +86,10 @@ function variantGhostFilled(props: Record<string, any>) {
       color: 'white'
     },
     _checked: {
+      bg: mode(`${c}.500`, darkActiveBg)(props),
+      color: 'white'
+    },
+    '.isActive': {
       bg: mode(`${c}.500`, darkActiveBg)(props),
       color: 'white'
     }

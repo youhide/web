@@ -1,18 +1,19 @@
 import { Button } from '@chakra-ui/button'
 import { Box, Link, Stack } from '@chakra-ui/layout'
 import { ModalBody, ModalFooter } from '@chakra-ui/modal'
-import { CircularProgress, CircularProgressLabel } from '@chakra-ui/progress'
-import { HDWallet } from '@shapeshiftoss/hdwallet-core'
+import { CircularProgressLabel } from '@chakra-ui/progress'
 import { Asset } from '@shapeshiftoss/types'
 import { useTranslate } from 'react-polyglot'
 import { Amount } from 'components/Amount/Amount'
 import { AssetIcon } from 'components/AssetIcon'
+import { CircularProgress } from 'components/CircularProgress/CircularProgress'
 import { Row } from 'components/Row/Row'
 import { SlideTransition } from 'components/SlideTransition'
 import { Text } from 'components/Text'
 
 type ApproveProps = {
   asset: Asset
+  feeAsset: Asset
   cryptoEstimatedGasFee: string
   disableAction?: boolean
   fiatEstimatedGasFee: string
@@ -21,32 +22,24 @@ type ApproveProps = {
   loadingText?: string
   onConfirm(): Promise<void>
   onCancel(): void
-  wallet: HDWallet
 }
 
 export const Approve = ({
-  onConfirm,
-  onCancel,
-  loading,
   asset,
-  learnMoreLink,
-  loadingText,
   cryptoEstimatedGasFee,
-  fiatEstimatedGasFee
+  feeAsset,
+  fiatEstimatedGasFee,
+  learnMoreLink,
+  loading,
+  loadingText,
+  onCancel,
+  onConfirm
 }: ApproveProps) => {
   const translate = useTranslate()
   return (
     <SlideTransition>
       <ModalBody width='full' textAlign='center'>
-        <CircularProgress
-          size='120px'
-          thickness='4px'
-          trackColor='gray.700'
-          color='blue.500'
-          mt={8}
-          mb={4}
-          isIndeterminate={loading}
-        >
+        <CircularProgress size='120px' thickness='4px' mt={8} mb={4} isIndeterminate={loading}>
           <CircularProgressLabel>
             <AssetIcon symbol='usdc' boxSize='90px' />
           </CircularProgressLabel>
@@ -71,7 +64,7 @@ export const Approve = ({
                 <Amount.Crypto
                   color='gray.500'
                   value={cryptoEstimatedGasFee}
-                  symbol={asset.symbol}
+                  symbol={feeAsset.symbol}
                 />
               </Box>
             </Row.Value>

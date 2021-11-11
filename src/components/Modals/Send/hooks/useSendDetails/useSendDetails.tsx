@@ -1,5 +1,6 @@
 import { useToast } from '@chakra-ui/react'
-import { utxoAccountParams } from '@shapeshiftoss/chain-adapters'
+import { toPath, utxoAccountParams } from '@shapeshiftoss/chain-adapters'
+import { bip32ToAddressNList } from '@shapeshiftoss/hdwallet-core'
 import { chainAdapters, ChainTypes, UtxoAccountType } from '@shapeshiftoss/types'
 import get from 'lodash/get'
 import { useEffect, useState } from 'react'
@@ -34,9 +35,6 @@ type UseSendDetailsReturnType = {
   validateFiatAmount(value: string): boolean | string
 }
 
-// TODO (technojak) this should be removed in favor of the asset-service. For now assume the fallback is eth
-const ETH_PRECISION = 18
-
 export const useSendDetails = (): UseSendDetailsReturnType => {
   const [fieldName, setFieldName] = useState<AmountFieldName>(SendFormFields.FiatAmount)
   const [loading, setLoading] = useState<boolean>(false)
@@ -56,7 +54,7 @@ export const useSendDetails = (): UseSendDetailsReturnType => {
   ]
   const { balances, error: balanceError, loading: balancesLoading } = useFlattenedBalances()
   const { assetBalance, accountBalances } = useAccountBalances({ asset, balances })
-  const chainAdapter = useChainAdapters()
+  const chainAdapterManager = useChainAdapters()
   const {
     state: { wallet }
   } = useWallet()
@@ -78,46 +76,62 @@ export const useSendDetails = (): UseSendDetailsReturnType => {
     }
   }, [balanceError, toast, history, translate])
 
-  const adapter = chainAdapter.byChain(asset.chain)
+  const adapter = chainAdapterManager.byChain(asset.chain)
 
   const currentAccountType: UtxoAccountType = useSelector(
     (state: ReduxState) => state.preferences[getAccountTypeKey(asset.chain)]
   )
 
-  const buildTransaction = async (): Promise<{
-    txToSign: chainAdapters.ChainTxType<ChainTypes>
-    estimatedFees: chainAdapters.FeeDataEstimate<ChainTypes>
-  }> => {
+  const estimateFees = async (): Promise<chainAdapters.FeeDataEstimate<ChainTypes>> => {
     const values = getValues()
-    if (wallet) {
-      const value = bnOrZero(values.crypto.amount)
-        .times(bnOrZero(10).exponentiatedBy(values.asset.precision || ETH_PRECISION))
-        .toFixed(0)
 
-      try {
-        const accountParams = currentAccountType
-          ? utxoAccountParams(asset, currentAccountType, 0)
-          : {}
-        const data = await adapter.buildSendTransaction({
+    if (!wallet) throw new Error('No wallet connected')
+
+    const value = bnOrZero(values.crypto.amount)
+      .times(bnOrZero(10).exponentiatedBy(values.asset.precision))
+      .toFixed(0)
+
+    switch (values.asset.chain) {
+      case ChainTypes.Ethereum: {
+        const from = await adapter.getAddress({
+          wallet
+        })
+        const ethereumChainAdapter = chainAdapterManager.byChain(ChainTypes.Ethereum)
+        return ethereumChainAdapter.getFeeData({
           to: values.address,
           value,
-          erc20ContractAddress: values.asset.tokenId,
-          wallet,
-          ...accountParams
+          chainSpecific: { from, contractAddress: values.asset.tokenId }
         })
-        return data
-      } catch (error) {
-        throw error
       }
+      case ChainTypes.Bitcoin: {
+        const accountParams = utxoAccountParams(asset, currentAccountType, 0)
+        const pubkeys = await wallet.getPublicKeys([
+          {
+            coin: adapter.getType(),
+            addressNList: bip32ToAddressNList(toPath(accountParams.bip32Params)),
+            curve: 'secp256k1',
+            scriptType: accountParams.scriptType
+          }
+        ])
+
+        if (!pubkeys || !pubkeys[0]) throw new Error('no pubkeys')
+
+        const bitcoinChainAdapter = chainAdapterManager.byChain(ChainTypes.Bitcoin)
+        return bitcoinChainAdapter.getFeeData({
+          to: values.address,
+          value,
+          chainSpecific: { pubkey: pubkeys[0].xpub }
+        })
+      }
+      default:
+        throw new Error('unsupported chain type')
     }
-    throw new Error('No wallet connected')
   }
 
   const handleNextClick = async () => {
     try {
       setLoading(true)
-      const { txToSign, estimatedFees } = await buildTransaction()
-      setValue(SendFormFields.Transaction, txToSign)
+      const estimatedFees = await estimateFees()
       setValue(SendFormFields.EstimatedFees, estimatedFees)
       history.push(SendRoutes.Confirm)
     } catch (error) {
@@ -141,21 +155,42 @@ export const useSendDetails = (): UseSendDetailsReturnType => {
       })
 
       // Assume fast fee for send max
+      // This is used to make make sure its impossible to send more than our balance
       let fastFee: string = ''
       switch (chain) {
         case ChainTypes.Ethereum: {
-          const ethAdapter = chainAdapter.byChain(ChainTypes.Ethereum)
+          const ethAdapter = chainAdapterManager.byChain(ChainTypes.Ethereum)
           const contractAddress = tokenId
           const value = asset.tokenId ? '0' : assetBalance.balance
-          const adapterFees = await ethAdapter.getFeeData({ to, from, value, contractAddress })
-          fastFee = adapterFees.fast.chainSpecific.feePerTx
+          const adapterFees = await ethAdapter.getFeeData({
+            to,
+            value,
+            chainSpecific: { contractAddress, from }
+          })
+          fastFee = adapterFees.fast.txFee
           break
         }
         case ChainTypes.Bitcoin: {
-          const btcAdapter = chainAdapter.byChain(ChainTypes.Bitcoin)
+          const accountParams = utxoAccountParams(asset, currentAccountType, 0)
+          const pubkeys = await wallet.getPublicKeys([
+            {
+              coin: adapter.getType(),
+              addressNList: bip32ToAddressNList(toPath(accountParams.bip32Params)),
+              curve: 'secp256k1',
+              scriptType: accountParams.scriptType
+            }
+          ])
+
+          if (!pubkeys || !pubkeys[0]) throw new Error('no pubkeys')
+
+          const btcAdapter = chainAdapterManager.byChain(ChainTypes.Bitcoin)
           const value = assetBalance.balance
-          const adapterFees = await btcAdapter.getFeeData({ to, from, value })
-          fastFee = adapterFees.fast.feePerUnit
+          const adapterFees = await btcAdapter.getFeeData({
+            to,
+            value,
+            chainSpecific: { pubkey: pubkeys[0].xpub }
+          })
+          fastFee = adapterFees.fast.txFee
           break
         }
         default: {
