@@ -49,6 +49,12 @@ export const txHistory = createSlice({
     onMessage(state, { payload }: TxMessage) {
       const chain = payload.message.chain
       state[chain] = updateOrInsert(state[chain], payload.message)
+    },
+    deleteTxHistory(state) {
+      state = {
+        [ChainTypes.Ethereum]: {},
+        [ChainTypes.Bitcoin]: {}
+      }
     }
   }
 })

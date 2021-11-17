@@ -21,6 +21,7 @@ export const TransactionsProvider = ({ children }: TransactionsProviderProps): J
 
   useEffect(() => {
     if (!wallet) return
+    dispatch(txHistory.actions.deleteTxHistory())
     ;(async () => {
       const supportedAdapters = chainAdapter.getSupportedAdapters()
 
