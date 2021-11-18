@@ -9,6 +9,7 @@ import {
   Tag,
   useColorModeValue
 } from '@chakra-ui/react'
+import { caip19 } from '@shapeshiftoss/caip'
 import { chainAdapters, NetworkTypes } from '@shapeshiftoss/types'
 import dayjs from 'dayjs'
 import localizedFormat from 'dayjs/plugin/localizedFormat'
@@ -54,7 +55,13 @@ export const TransactionRow = ({ tx, compact }: { tx: Tx; compact?: boolean }) =
   )
 
   useEffect(() => {
-    if (!symbol) dispatch(fetchAsset(asset.caip19))
+    if (symbol) return
+    const assetCAIP19 = caip19.toCAIP19({
+      chain: tx.chain,
+      network: NetworkTypes.MAINNET,
+      ...(tx.asset ? { tokenId: tx.asset.toLowerCase() } : undefined)
+    })
+    dispatch(fetchAsset(assetCAIP19))
   }, [dispatch, symbol, tx.chain, tx.asset])
 
   return (

@@ -14,17 +14,8 @@ export const useFetchAsset = ({ chain, tokenId }: { chain: ChainTypes; tokenId?:
   const asset = useSelector((state: ReduxState) => state.assets[tokenId ?? chain])
 
   useEffect(() => {
-    if (ALLOWED_CHAINS[chain]) {
-      if (!asset) {
-        dispatch(
-          fetchAsset({
-            chain,
-            network: NetworkTypes.MAINNET,
-            tokenId
-          })
-        )
-      }
-    }
+    if (asset) return
+    dispatch(fetchAsset(asset.caip19))
   }, [asset, chain, dispatch, tokenId])
 
   return asset
