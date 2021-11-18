@@ -1,6 +1,6 @@
 import { SearchIcon } from '@chakra-ui/icons'
 import { Box, Input, InputGroup, InputLeftElement } from '@chakra-ui/react'
-import { Asset, NetworkTypes } from '@shapeshiftoss/types'
+import { Asset } from '@shapeshiftoss/types'
 import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useDispatch, useSelector } from 'react-redux'
@@ -32,7 +32,7 @@ export const AssetSearch = ({ onClick }: AssetSearchProps) => {
   const searching = useMemo(() => searchString.length > 0, [searchString])
 
   useEffect(() => {
-    !assets.length && dispatch(fetchAssets({ network: NetworkTypes.MAINNET }))
+    !assets.length && dispatch(fetchAssets())
     !marketCapLoaded && !marketCapLoading && dispatch(fetchMarketCaps())
   }, [assets, dispatch, marketCapLoaded, marketCapLoading])
 

@@ -1,5 +1,5 @@
 import { Stack } from '@chakra-ui/layout'
-import { NetworkTypes } from '@shapeshiftoss/types'
+import { isEmpty } from 'lodash'
 import { useEffect } from 'react'
 import { useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
@@ -19,12 +19,10 @@ export const AccountList = ({ loading }: { loading?: boolean }) => {
   const emptyAccounts = new Array(5).fill(null)
 
   useEffect(() => {
-    // arbitrary number to just make sure we dont fetch all assets if we already have
-    if (Object.keys(assets).length < 100) {
-      dispatch(fetchAssets({ network: NetworkTypes.MAINNET }))
-    }
+    if (!isEmpty(assets)) return
+    dispatch(fetchAssets())
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [assets])
 
   const accountRows = useMemo(() => {
     return (

@@ -1,57 +1,46 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
-import { Asset, ChainTypes, NetworkTypes } from '@shapeshiftoss/types'
+import { CAIP19, caip19 } from '@shapeshiftoss/caip'
+import { Asset, NetworkTypes } from '@shapeshiftoss/types'
 import { getAssetService } from 'lib/assetService'
 import { ReduxState } from 'state/reducer'
 
 export type FullAsset = Asset & { description?: string }
 export type AssetsState = { [key: string]: Asset & { description?: string } }
 
-export const fetchAsset = createAsyncThunk(
-  'asset/fetchAsset',
-  async ({
-    tokenId,
-    chain,
-    network
-  }: {
-    tokenId?: string
-    chain: ChainTypes
-    network: NetworkTypes
-  }) => {
-    try {
-      const service = await getAssetService()
-
-      const assetData = service?.byTokenId({ chain, network, tokenId })
-      const description = await service?.description({ asset: assetData })
-      if (!assetData) return {}
-      if (!description) return { [tokenId || chain]: assetData }
-      return { [tokenId || chain]: { ...assetData, description } }
-    } catch (error) {
-      console.error(error)
-      return {}
-    }
+export const fetchAsset = createAsyncThunk('asset/fetchAsset', async (assetCAIP19: CAIP19) => {
+  try {
+    const service = await getAssetService()
+    const { chain, network, tokenId } = caip19.fromCAIP19(assetCAIP19)
+    const asset = service?.byTokenId({ chain, network, tokenId })
+    if (!asset) return {}
+    const description = await service?.description({ asset })
+    const { caip19: key } = asset
+    if (!description) return { [key]: asset }
+    return { [key]: { ...asset, description } }
+  } catch (error) {
+    console.error(error)
+    return {}
   }
-)
+})
 
-export const fetchAssets = createAsyncThunk(
-  'asset/fetchAssets',
-  async ({ network }: { network: NetworkTypes }, thunkApi) => {
-    try {
-      const service = await getAssetService()
-      const assets = service?.byNetwork(network)
-      const assetsObj = {} as AssetsState
-      const state = thunkApi.getState() as ReduxState
+export const fetchAssets = createAsyncThunk('asset/fetchAssets', async (_, thunkApi) => {
+  try {
+    const service = await getAssetService()
+    const network = NetworkTypes.MAINNET
+    const assets = service?.byNetwork(network)
+    const assetsObj = {} as AssetsState
+    const state = thunkApi.getState() as ReduxState
 
-      assets.forEach((asset: Asset) => {
-        const key = asset.tokenId ?? asset.chain
-        assetsObj[key] = { ...(state?.assets[key] ? state?.assets[key] : {}), ...asset }
-      })
-      return assetsObj
-    } catch (error) {
-      console.error(error)
-      return {}
-    }
+    assets.forEach((asset: Asset) => {
+      const { caip19: key } = asset
+      assetsObj[key] = { ...(state?.assets[key] ? state?.assets[key] : {}), ...asset }
+    })
+    return assetsObj
+  } catch (error) {
+    console.error(error)
+    return {}
   }
-)
+})
 
 const initialState = {} as AssetsState
 
@@ -61,10 +50,11 @@ export const assets = createSlice({
   reducers: {},
   extraReducers: builder => {
     builder
-      .addCase(fetchAsset.fulfilled, (state, { payload, meta }) => {
-        const tokenId = meta.arg.tokenId ?? meta.arg.chain
-        if (payload[tokenId]) {
-          state[tokenId] = payload[tokenId]
+      .addCase(fetchAsset.fulfilled, (state, { payload }) => {
+        if (!payload.arg) return
+        const { caip19: key } = payload.arg
+        if (payload[key]) {
+          state[key] = payload[key]
         }
       })
       .addCase(fetchAssets.fulfilled, (state, { payload }) => {

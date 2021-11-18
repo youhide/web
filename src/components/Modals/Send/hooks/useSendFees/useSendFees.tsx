@@ -14,7 +14,7 @@ export const useSendFees = () => {
   const { asset, estimatedFees } = useWatch({
     control
   })
-  const getAssetData = useGetAssetData({ chain: asset?.chain })
+  const getAssetData = useGetAssetData(asset?.caip19)
   const feeAsset = useFetchAsset({ chain: asset?.chain })
   const {
     state: { wallet }

@@ -54,15 +54,7 @@ export const TransactionRow = ({ tx, compact }: { tx: Tx; compact?: boolean }) =
   )
 
   useEffect(() => {
-    if (!symbol) {
-      dispatch(
-        fetchAsset({
-          chain: tx.chain,
-          network: NetworkTypes.MAINNET,
-          ...(tx.asset ? { tokenId: tx.asset.toLowerCase() } : undefined)
-        })
-      )
-    }
+    if (!symbol) dispatch(fetchAsset(asset.caip19))
   }, [dispatch, symbol, tx.chain, tx.asset])
 
   return (
