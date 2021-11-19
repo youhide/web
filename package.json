@@ -68,7 +68,7 @@
     "redux-persist": "^6.0.0",
     "scrypt-js": "^3.0.1",
     "web-vitals": "^2.1.0",
-    "web3": "^1.6.0"
+    "web3": "^1.6.1"
   },
   "scripts": {
     "show-linked-packages": "find node_modules node_modules/@* -depth 1 -type l -print",
@@ -160,7 +160,7 @@
     "storybook-dark-mode": "^1.0.8",
     "ts-jest": "^27.0.4",
     "typescript": "^4.1.6",
-    "web3-utils": "^1.5.2",
+    "web3-utils": "^1.6.1",
     "yarn-minify": "^1.0.1"
   },
   "resolutions": {
