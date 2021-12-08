@@ -1,8 +1,29 @@
 /**
  * React App Rewired Config
  */
+const fs = require('fs')
+const ssri = require('ssri')
+const SriPlugin = require('webpack-subresource-integrity')
 const headers = require('./headers')
 process.env.REACT_APP_CSP_META = headers.cspMeta ?? ''
+
+// The HTML template can pull in static assets from outside of the Webpack
+// pipeline; these need SRI too. This generates SRI attributes for each static
+// asset, exporting them as predictably-named REACT_APP_SRI_FILENAME_EXT
+// environment variables that can be used in the template.
+for (const dirent of fs.readdirSync('./public', { withFileTypes: true })) {
+  if (!dirent.isFile()) continue
+  const integrity = ssri.fromData(fs.readFileSync(`./public/${dirent.name}`), {
+    strict: true,
+    algorithms: ['sha256']
+  })
+  const mungedName = dirent.name
+    .toUpperCase()
+    .split('')
+    .map(x => (/^[0-9A-Z]$/.test(x) ? x : '_'))
+    .join('')
+  process.env[`REACT_APP_SRI_${mungedName}`] = integrity.toString()
+}
 
 const reactEnvEntries = Object.entries(process.env)
   .filter(([k]) => k.startsWith('REACT_APP'))
@@ -26,6 +47,17 @@ module.exports = {
     config.optimization = config.optimization || {}
     config.optimization.splitChunks = config.optimization.splitChunks || {}
     config.optimization.splitChunks.maxSize = 8 * 1024 * 1024
+
+    config.output = config.output || {}
+    config.output.crossOriginLoading = 'anonymous'
+
+    config.plugins = config.plugins || []
+    config.plugins.push(
+      new SriPlugin({
+        hashFuncNames: ['sha256'],
+        enabled: process.env.NODE_ENV === 'production'
+      })
+    )
 
     // This will be unnessecary in react-scripts ^4.1
     // ref: https://github.com/facebook/create-react-app/issues/8096#issuecomment-751894155
