@@ -1,14 +1,17 @@
 import { createSelector, createSlice } from '@reduxjs/toolkit'
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 import { caip2, CAIP10, caip10, CAIP19, caip19 } from '@shapeshiftoss/caip'
-import { chainAdapters, ChainTypes } from '@shapeshiftoss/types'
+import { Asset, chainAdapters, ChainTypes } from '@shapeshiftoss/types'
 import cloneDeep from 'lodash/cloneDeep'
 import isEmpty from 'lodash/isEmpty'
 import isEqual from 'lodash/isEqual'
 import { getChainAdapters } from 'context/ChainAdaptersProvider/ChainAdaptersProvider'
 import { Pubkeys } from 'hooks/usePubkeys/usePubkeys'
-import { bn, bnOrZero } from 'lib/bignumber/bignumber'
+import { BigNumber, bn, bnOrZero } from 'lib/bignumber/bignumber'
+import { fromBaseUnit } from 'lib/math'
 import { ReduxState } from 'state/reducer'
+import { selectAssetsById } from 'state/slices/assetsSlice/assetsSlice'
+import { selectMarketData } from 'state/slices/marketDataSlice/marketDataSlice'
 
 export type PortfolioAccounts = {
   byId: {
@@ -79,7 +82,9 @@ export const accountsToPortfolio: AccountsToPortfolio = args => {
         if (!tokens) break
         tokens.forEach(token => {
           const { contractType, contract: tokenId, balance } = token
-          const tokenCAIP19 = caip19.toCAIP19({ chain, network, contractType, tokenId })
+          const tokenCAIP19 = caip19
+            .toCAIP19({ chain, network, contractType, tokenId })
+            .toLowerCase() // TODO(0xdef1cafe): do this in caip19
           portfolio.accounts.byId[CAIP10].push(tokenCAIP19)
           portfolio.balances.ids.push(tokenCAIP19)
           portfolio.balances.byId[tokenCAIP19] = balance
@@ -172,13 +177,62 @@ export const selectPortfolioAssetIds = createSelector(
   { memoizeOptions: { resultEqualityCheck: isEqual } }
 )
 
-export const selectPortfolioBalances = createSelector(
-  (state: ReduxState) => state.portfolio.balances.byId,
-  byId => byId
-)
+export const selectPortfolioCryptoBalances = (state: ReduxState) => state.portfolio.balances.byId
 
 export const selectPortfolioCryptoBalanceById = createSelector(
-  (state: ReduxState) => state.portfolio.balances.byId,
+  selectPortfolioCryptoBalances,
   (_state: ReduxState, id: CAIP19) => id,
   (byId, id) => byId[id]
 )
+
+export const selectBalances = (state: ReduxState) => state.portfolio.balances.byId
+
+export const selectTotalFiatBalance = createSelector(
+  selectAssetsById,
+  selectMarketData,
+  selectPortfolioCryptoBalances,
+  (assets, marketData, cryptoBalances) => {
+    const result = Object.entries(cryptoBalances).reduce<BigNumber>(
+      (acc, [CAIP19, balanceString]) => {
+        const precision = assets[CAIP19]?.precision
+        const price = marketData[CAIP19]?.price
+        if (!price || !precision) return acc
+        const cryptoValue = fromBaseUnit(balanceString, precision)
+        const assetFiatBalance = bnOrZero(cryptoValue).times(price)
+        return acc.plus(assetFiatBalance)
+      },
+      bn(0)
+    )
+    return result.decimalPlaces(2).toNumber()
+  }
+)
+
+export const selectAssetFiatBalance = createSelector(
+  selectAssetsById,
+  selectMarketData,
+  selectPortfolioCryptoBalances,
+  (_state: ReduxState, CAIP19: CAIP19) => CAIP19,
+  (assets, marketData, cryptoBalances, CAIP19): string => {
+    const balance = cryptoBalances[CAIP19]
+    const precision = assets[CAIP19]?.precision
+    const price = marketData[CAIP19]?.price
+    if (!price || !precision) return '0'
+    return bnOrZero(fromBaseUnit(balance, precision)).times(price).toFixed(2)
+  }
+)
+
+export const selectAssetCryptoBalance = createSelector(
+  selectPortfolioCryptoBalances,
+  (_state: ReduxState, CAIP19: CAIP19): string => CAIP19,
+  (cryptoBalances, CAIP19) => cryptoBalances[CAIP19]
+)
+
+export const selectPortfolioAssets = createSelector(
+  selectAssetsById,
+  selectPortfolioAssetIds,
+  (assets, ids) => ids.reduce<PortfolioAssets>((acc, cur) => ({ ...acc, [cur]: assets[cur] }), {})
+)
+
+export type PortfolioAssets = {
+  [k: CAIP19]: Asset
+}

@@ -13,12 +13,12 @@ import { DashboardIcon } from 'components/Icons/Dashboard'
 import { Text } from 'components/Text'
 import { useModal } from 'context/ModalProvider/ModalProvider'
 import { useWallet, WalletActions } from 'context/WalletProvider/WalletProvider'
-import { useCAIP19Balances } from 'hooks/useBalances/useCAIP19Balances'
 import { bnOrZero } from 'lib/bignumber/bignumber'
 import { usePortfolio } from 'pages/Dashboard/contexts/PortfolioContext'
 import { sortByFiat } from 'pages/Dashboard/helpers/sortByFiat/sortByFiat'
-import { ReduxState } from 'state/reducer'
 import { fetchAssets, selectAssetsById } from 'state/slices/assetsSlice/assetsSlice'
+import { selectMarketData } from 'state/slices/marketDataSlice/marketDataSlice'
+import { selectBalances } from 'state/slices/portfolioSlice/portfolioSlice'
 
 const AccountHeader = () => (
   <Grid
@@ -63,8 +63,8 @@ export const AccountList = ({ loading }: { loading?: boolean }) => {
     dispatch: walletDispatch
   } = useWallet()
   const assets = useSelector(selectAssetsById)
-  const marketData = useSelector((state: ReduxState) => state.marketData.marketData.byId)
-  const { balances } = useCAIP19Balances()
+  const marketData = useSelector(selectMarketData)
+  const balances = useSelector(selectBalances)
   const { totalBalance } = usePortfolio()
 
   useEffect(() => {
@@ -76,9 +76,10 @@ export const AccountList = ({ loading }: { loading?: boolean }) => {
   }, [])
 
   const accounts = useMemo(() => {
-    return Object.keys(balances)
+    const result = Object.keys(balances)
       .sort(sortByFiat({ balances, assets, marketData }))
-      .filter(key => bnOrZero(balances[key].balance).gt(0))
+      .filter(key => bnOrZero(balances[key]).gt(0))
+    return result
   }, [assets, balances, marketData])
 
   const accountRows = useMemo(() => {
@@ -114,13 +115,10 @@ export const AccountList = ({ loading }: { loading?: boolean }) => {
         <AccountHeader />
         {Object.keys(balances)
           .sort(sortByFiat({ balances, assets, marketData }))
-          .filter(key => bnOrZero(balances[key].balance).gt(0))
+          .filter(key => bnOrZero(balances[key]).gt(0))
           .map(key => {
-            const account = balances[key]
+            const balance = bnOrZero(balances[key])
             const asset = assets[key]
-            const balance = asset
-              ? bnOrZero(account.balance).div(`1e+${asset.precision}`)
-              : bnOrZero(0)
             const market = marketData[key]
             const fiatValue = balance.times(bnOrZero(market?.price)).toNumber()
 
@@ -132,7 +130,7 @@ export const AccountList = ({ loading }: { loading?: boolean }) => {
                   .div(bnOrZero(totalBalance))
                   .times(100)
                   .toNumber()}
-                balance={account.balance ?? '0'}
+                balance={balance.decimalPlaces(0).toString() ?? '0'}
                 CAIP19={asset.caip19}
                 key={asset.caip19}
               />

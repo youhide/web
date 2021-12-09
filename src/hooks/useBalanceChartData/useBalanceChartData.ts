@@ -1,5 +1,5 @@
 import { CAIP19 } from '@shapeshiftoss/caip'
-import { chainAdapters, ChainTypes, HistoryData, HistoryTimeframe } from '@shapeshiftoss/types'
+import { HistoryData, HistoryTimeframe } from '@shapeshiftoss/types'
 import { TxType } from '@shapeshiftoss/types/dist/chain-adapters'
 import { BigNumber } from 'bignumber.js'
 import dayjs from 'dayjs'
@@ -14,13 +14,13 @@ import sortedIndexBy from 'lodash/sortedIndexBy'
 import { useEffect, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { useWallet } from 'context/WalletProvider/WalletProvider'
-import { useCAIP19Balances } from 'hooks/useBalances/useCAIP19Balances'
 import { useDebounce } from 'hooks/useDebounce/useDebounce'
-import { PortfolioAssets, usePortfolioAssets } from 'hooks/usePortfolioAssets/usePortfolioAssets'
 import { bn, bnOrZero } from 'lib/bignumber/bignumber'
 import { usePriceHistory } from 'pages/Assets/hooks/usePriceHistory/usePriceHistory'
 import { PriceHistoryData } from 'pages/Assets/hooks/usePriceHistory/usePriceHistory'
 import { ReduxState } from 'state/reducer'
+import { PortfolioAssets, selectBalances } from 'state/slices/portfolioSlice/portfolioSlice'
+import { selectPortfolioAssets } from 'state/slices/portfolioSlice/portfolioSlice'
 import { selectTxs, Tx } from 'state/slices/txHistorySlice/txHistorySlice'
 
 type PriceAtBlockTimeArgs = {
@@ -71,12 +71,6 @@ type MakeBucketsReturn = {
   meta: BucketMeta
 }
 
-type MakeBucketsArgs = {
-  timeframe: HistoryTimeframe
-  assets: CAIP19[]
-  balances: { [k: CAIP19]: chainAdapters.Account<ChainTypes> }
-}
-
 // adjust this to give charts more or less granularity
 export const timeframeMap = {
   [HistoryTimeframe.HOUR]: { count: 60, duration: 1, unit: 'minute' },
@@ -87,18 +81,24 @@ export const timeframeMap = {
   [HistoryTimeframe.ALL]: { count: 262, duration: 1, unit: 'weeks' }
 }
 
+type MakeBucketsArgs = {
+  timeframe: HistoryTimeframe
+  balances: { [k: CAIP19]: string }
+}
+
 type MakeBuckets = (args: MakeBucketsArgs) => MakeBucketsReturn
 
 export const makeBuckets: MakeBuckets = args => {
-  const { assets, balances, timeframe } = args
+  const { balances, timeframe } = args
 
   // current asset balances, we iterate over this later and adjust on each tx
-  const assetBalances = assets.reduce<CryptoBalance>((acc, cur) => {
-    const account = balances[cur]
-    if (!account) return acc // we don't have a balance for this asset, e.g. metamask bitcoin
-    acc[cur] = bnOrZero(account.balance)
-    return acc
-  }, {})
+  const assetBalances = Object.entries(balances).reduce<CryptoBalance>(
+    (acc, [CAIP19, balanceString]) => {
+      acc[CAIP19] = bnOrZero(balanceString)
+      return acc
+    },
+    {}
+  )
 
   const makeReducer = (duration: number, unit: dayjs.ManipulateType) => {
     const now = dayjs()
@@ -172,6 +172,7 @@ const fiatBalanceAtBucket: FiatBalanceAtBucket = ({
   const { crypto } = balance
   const result = Object.entries(crypto).reduce((acc, [caip19, assetCryptoBalance]) => {
     const assetPriceHistoryData = priceHistoryData[caip19]
+    if (!assetPriceHistoryData) return acc
     const price = priceAtBlockTime({ assetPriceHistoryData, time })
     const portfolioAsset = portfolioAssets[caip19]
     if (!portfolioAsset) {
@@ -266,26 +267,18 @@ type UseBalanceChartDataArgs = {
 
 type UseBalanceChartData = (args: UseBalanceChartDataArgs) => UseBalanceChartDataReturn
 
-/*
-  this whole implementation is kind of jank, but it's the data we have to work with
-  we take the current asset balances, and work backwards, updating crypto
-  balances and fiat prices for each time interval (bucket) of the chart
-
-  this can leave residual value at the beginning of charts, or inaccuracies
-  especially if txs occur during periods of volatility
-*/
 export const useBalanceChartData: UseBalanceChartData = args => {
   // assets is a caip19[] of requested assets for this balance chart
   const { assets, timeframe } = args
   const [balanceChartDataLoading, setBalanceChartDataLoading] = useState(true)
   const [balanceChartData, setBalanceChartData] = useState<HistoryData[]>([])
-  const { balances, loading: caip19BalancesLoading } = useCAIP19Balances()
+  const balances = useSelector(selectBalances)
   const accountTypes = useSelector((state: ReduxState) => state.preferences.accountTypes)
   const {
     state: { walletInfo }
   } = useWallet()
   // portfolioAssets are all assets in a users portfolio
-  const { portfolioAssets, portfolioAssetsLoading } = usePortfolioAssets()
+  const portfolioAssets = useSelector(selectPortfolioAssets)
   // we can't tell if txs are finished loading over the websocket, so
   // debounce a bit before doing expensive computations
   const txs = useDebounce(useSelector(selectTxs), 500)
@@ -294,16 +287,13 @@ export const useBalanceChartData: UseBalanceChartData = args => {
   useEffect(() => {
     if (isNil(walletInfo?.deviceId)) return
     if (priceHistoryLoading) return
-    if (caip19BalancesLoading) return
-    if (portfolioAssetsLoading) return
     if (!assets.length) return
     if (!txs.length) return
     if (isEmpty(balances)) return
-    if (!assets.every(asset => (priceHistoryData[asset] ?? []).length)) return // need price history for all assets
 
     setBalanceChartDataLoading(true)
     // create empty buckets based on the assets, current balances, and timeframe
-    const emptyBuckets = makeBuckets({ assets, balances, timeframe })
+    const emptyBuckets = makeBuckets({ balances, timeframe })
     // put each tx into a bucket for the chart
     const buckets = bucketTxs(txs, emptyBuckets)
 
@@ -330,9 +320,7 @@ export const useBalanceChartData: UseBalanceChartData = args => {
     txs,
     timeframe,
     balances,
-    caip19BalancesLoading,
     setBalanceChartData,
-    portfolioAssetsLoading,
     portfolioAssets,
     walletInfo?.deviceId
   ])

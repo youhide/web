@@ -128,6 +128,8 @@ export const marketData = createSlice({
   }
 })
 
+export const selectMarketData = (state: ReduxState) => state.marketData.marketData.byId
+
 export const selectMarketDataById = createSelector(
   (state: ReduxState) => state.marketData.marketData.byId,
   (_state: ReduxState, id: CAIP19) => id,

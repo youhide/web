@@ -1,12 +1,13 @@
 import { Box, Skeleton, Stack } from '@chakra-ui/react'
 import { HistoryTimeframe } from '@shapeshiftoss/types'
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
+import { useSelector } from 'react-redux'
 import { Amount } from 'components/Amount/Amount'
 import { Card } from 'components/Card/Card'
 import { Graph } from 'components/Graph/Graph'
 import { TimeControls } from 'components/Graph/TimeControls'
 import { Text } from 'components/Text'
-import { usePortfolioAssets } from 'hooks/usePortfolioAssets/usePortfolioAssets'
+import { selectPortfolioAssetIds } from 'state/slices/portfolioSlice/portfolioSlice'
 
 import { useBalanceChartData } from '../../hooks/useBalanceChartData/useBalanceChartData'
 import { AccountList } from './components/AccountList/AccountList'
@@ -15,15 +16,14 @@ import { usePortfolio } from './contexts/PortfolioContext'
 export const Portfolio = () => {
   const [timeframe, setTimeframe] = useState(HistoryTimeframe.DAY)
   const { totalBalance, loading: portfolioLoading } = usePortfolio()
-  const { portfolioAssets, portfolioAssetsLoading } = usePortfolioAssets()
 
-  const assets = useMemo(() => Object.keys(portfolioAssets).filter(Boolean), [portfolioAssets])
+  const assets = useSelector(selectPortfolioAssetIds)
   const { balanceChartData, balanceChartDataLoading } = useBalanceChartData({
     assets,
     timeframe
   })
 
-  const loading = portfolioLoading || portfolioAssetsLoading
+  const loading = portfolioLoading
   const isLoaded = !loading
 
   return (

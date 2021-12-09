@@ -1,12 +1,14 @@
 import React, { useContext } from 'react'
+import { useSelector } from 'react-redux'
 import { flattenTokenBalances, useFlattenedBalances } from 'hooks/useBalances/useFlattenedBalances'
-
-// import { usePubkeys } from 'hooks/usePubkeys/usePubkeys'
-// import { useGetAccountsQuery } from 'state/slices/portfolioSlice/portfolioSlice'
-import { useTotalBalance } from '../hooks/useTotalBalance/useTotalBalance'
+import { usePubkeys } from 'hooks/usePubkeys/usePubkeys'
+import {
+  selectTotalFiatBalance,
+  useGetAccountsQuery
+} from 'state/slices/portfolioSlice/portfolioSlice'
 
 type PortfolioContextProps = {
-  totalBalance: number
+  totalBalance: number // TODO(0xdef1cafe): rename this totalFiatBalance
   loading: boolean
   balances: ReturnType<typeof flattenTokenBalances>
 }
@@ -14,15 +16,13 @@ type PortfolioContextProps = {
 const PortfolioContext = React.createContext<PortfolioContextProps | null>(null)
 
 export const PortfolioProvider = ({ children }: { children: React.ReactNode }) => {
-  // these get replaced by selectors
   const { balances, loading } = useFlattenedBalances()
-  const totalBalance = useTotalBalance(balances)
+  const totalBalance = useSelector(selectTotalFiatBalance)
 
-  // example of how this works
   // usePubkeys will change when the wallet changes
-  // const pubkeys = usePubkeys()
+  const pubkeys = usePubkeys()
   // useGetAccountQuery manages fetching and caching accounts and balances
-  // const { data, isLoading } = useGetAccountsQuery(pubkeys)
+  useGetAccountsQuery(pubkeys)
 
   return (
     <PortfolioContext.Provider value={{ totalBalance, loading, balances }}>

@@ -20,6 +20,7 @@ import { isEmpty } from 'lodash'
 import { useMemo, useState } from 'react'
 import NumberFormat from 'react-number-format'
 import { useTranslate } from 'react-polyglot'
+import { useSelector } from 'react-redux'
 import { Card } from 'components/Card/Card'
 import { Graph } from 'components/Graph/Graph'
 import { TimeControls } from 'components/Graph/TimeControls'
@@ -27,14 +28,17 @@ import { SanitizedHtml } from 'components/SanitizedHtml/SanitizedHtml'
 import { RawText, Text } from 'components/Text'
 import { useWallet } from 'context/WalletProvider/WalletProvider'
 import { useBalanceChartData } from 'hooks/useBalanceChartData/useBalanceChartData'
-import { useFlattenedBalances } from 'hooks/useBalances/useFlattenedBalances'
 import { useLocaleFormatter } from 'hooks/useLocaleFormatter/useLocaleFormatter'
 import { useWalletSupportsChain } from 'hooks/useWalletSupportsChain/useWalletSupportsChain'
 import { fromBaseUnit } from 'lib/math'
 import { useAsset } from 'pages/Assets/Asset'
 import { usePercentChange } from 'pages/Assets/hooks/usePercentChange/usePercentChange'
 import { usePriceHistory } from 'pages/Assets/hooks/usePriceHistory/usePriceHistory'
-import { useTotalBalance } from 'pages/Dashboard/hooks/useTotalBalance/useTotalBalance'
+import { ReduxState } from 'state/reducer'
+import {
+  selectAssetCryptoBalance,
+  selectAssetFiatBalance
+} from 'state/slices/portfolioSlice/portfolioSlice'
 import { breakpoints } from 'theme/theme'
 
 import { AssetActions } from './AssetActions'
@@ -75,7 +79,7 @@ export const AssetHeader = ({ isLoaded }: { isLoaded: boolean }) => {
   const assetPriceHistoryData = useMemo(() => {
     if (isEmpty(priceHistoryData[asset?.caip19])) return []
     return priceHistoryData[asset.caip19].map(({ price, date }) => ({
-      price, // TODO(0xdef1cafe): update charts to accept price or balance
+      price,
       date: new Date(Number(date)).toISOString()
     }))
   }, [priceHistoryData, asset])
@@ -84,9 +88,11 @@ export const AssetHeader = ({ isLoaded }: { isLoaded: boolean }) => {
     data: assetPriceHistoryData,
     initPercentChange: percentChange
   })
-  const { balances } = useFlattenedBalances()
-  const id = asset.tokenId ?? asset.chain
-  const totalBalance = useTotalBalance({ [id]: balances[id] })
+
+  const balance = useSelector((state: ReduxState) => selectAssetCryptoBalance(state, asset.caip19))
+  const totalBalance = useSelector((state: ReduxState) =>
+    selectAssetFiatBalance(state, asset.caip19)
+  )
   const { balanceChartData, balanceChartDataLoading } = useBalanceChartData({
     assets,
     timeframe
@@ -175,9 +181,7 @@ export const AssetHeader = ({ isLoaded }: { isLoaded: boolean }) => {
                 <Stat size='sm' color='gray.500'>
                   <Skeleton isLoaded={isLoaded}>
                     <StatNumber>
-                      {`${fromBaseUnit(balances[id]?.balance ?? '0', asset.precision)}${
-                        asset.symbol
-                      }`}
+                      {`${fromBaseUnit(balance ?? '0', asset.precision)}${asset.symbol}`}
                     </StatNumber>
                   </Skeleton>
                 </Stat>
