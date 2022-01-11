@@ -14,11 +14,11 @@ import { selectAssetIds, selectAssets } from 'state/slices/assetsSlice/assetsSli
 import { supportedAccountTypes } from 'state/slices/preferencesSlice/preferencesSlice'
 
 // the value is an xpub/ypub/zpub, or eth account, used to query unchained
-export type AccountSpecifier = { [k: CAIP2]: string }
-type UseAccountSpecifiers = () => AccountSpecifier[]
+export type AccountSpecifierMap = { [k: CAIP2]: string }
+type UseAccountSpecifiers = () => AccountSpecifierMap[]
 
 export const useAccountSpecifiers: UseAccountSpecifiers = () => {
-  const [accountSpecifiers, setAccountSpecifiers] = useState<AccountSpecifier[]>([])
+  const [accountSpecifiers, setAccountSpecifiers] = useState<AccountSpecifierMap[]>([])
   const chainAdapter = useChainAdapters()
   const {
     state: { wallet, walletInfo }
@@ -30,7 +30,7 @@ export const useAccountSpecifiers: UseAccountSpecifiers = () => {
   const getAccountSpecifiers = useCallback(async () => {
     if (!wallet) return
     const supportedAdapters = chainAdapter.getSupportedAdapters()
-    const acc: AccountSpecifier[] = []
+    const acc: AccountSpecifierMap[] = []
 
     for (const getAdapter of supportedAdapters) {
       const adapter = getAdapter()
@@ -53,7 +53,7 @@ export const useAccountSpecifiers: UseAccountSpecifiers = () => {
           const bitcoin = assetsById[CAIP19]
 
           if (!bitcoin) continue
-          supportedAccountTypes.bitcoin.forEach(async accountType => {
+          for (const accountType of supportedAccountTypes.bitcoin) {
             const accountParams = utxoAccountParams(bitcoin, accountType, 0)
             const { bip44Params, scriptType } = accountParams
             const pubkeys = await wallet.getPublicKeys([
@@ -69,10 +69,10 @@ export const useAccountSpecifiers: UseAccountSpecifiers = () => {
             }
             pubkey = convertXpubVersion(pubkeys[0].xpub, accountType)
 
-            if (!pubkey) return
+            if (!pubkey) continue
             const CAIP2 = caip2.toCAIP2({ chain, network })
             acc.push({ [CAIP2]: pubkey })
-          })
+          }
           break
         }
         default:
